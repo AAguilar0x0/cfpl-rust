@@ -1,35 +1,32 @@
-use std::fs::File;
-use std::io::ErrorKind;
-use std::io::Read;
 pub mod lexer;
 pub mod source_code;
 pub mod token;
 pub mod token_type;
+use std::fs;
+use std::io::ErrorKind;
 
 pub fn source_code(source_code_string: String) {
     let cfpl_source_code = source_code::SourceCode {
+        vec: source_code_string.chars().collect(),
         source_code: source_code_string,
     };
-    if let Err(error) = lexer::lexical_analysis(&cfpl_source_code) {
-        print!("[Lexical-Analysis-Error]: {}", error)
+    let tokens = match lexer::lexical_analysis(&cfpl_source_code) {
+        Ok(result) => result,
+        Err(error) => return print!("[Lexical-Analysis-Error]: {}", error),
+    };
+    // Debugging purposes
+    print!("Tokens:");
+    for token in &tokens {
+        print!("\n{}", token);
     }
 }
 
 pub fn file(file_path: &str) {
-    let _file = File::open(file_path);
-    let mut _file = match _file {
-        Ok(file_result) => file_result,
-        Err(error) => {
-            return match error.kind() {
-                ErrorKind::NotFound => print!("File not found: {file_path}"),
-                _ => print!("Error opening the file: {file_path}"),
-            }
-        }
-    };
-    let mut source = String::new();
-    match _file.read_to_string(&mut source) {
-        Ok(_) => (),
-        Err(_) => return print!("Error reading the file: {file_path}"),
-    };
-    source_code(source);
+    source_code(match fs::read_to_string(file_path) {
+        Ok(result) => result,
+        Err(error) => match error.kind() {
+            ErrorKind::NotFound => return print!("File not found: {file_path}"),
+            _ => return print!("Error opening the file: {file_path}"),
+        },
+    });
 }

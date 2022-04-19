@@ -2,6 +2,7 @@ use super::token;
 
 pub struct SourceCode {
     pub source_code: String,
+    pub vec: Vec<char>,
 }
 
 impl SourceCode {
