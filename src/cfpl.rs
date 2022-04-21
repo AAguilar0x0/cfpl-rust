@@ -1,3 +1,4 @@
+pub mod lexeme;
 pub mod lexer;
 pub mod source_code;
 pub mod token;
