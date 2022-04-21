@@ -113,15 +113,16 @@ pub fn lexical_analysis(
                     COLUMN.with(|column| column.set(column.get() + index - i));
                     i = index;
                 } else if lexeme::is_double_quote(other) {
+                } else {
+                    let token_line = LINE.with(|line| line.get());
+                    let token_column = COLUMN.with(|column| column.get());
+                    Err(cfpl_source_code.error_string_manual(
+                        token_line,
+                        token_column,
+                        String::from(other),
+                        "Invalid character token.".to_string(),
+                    ))?
                 }
-                let token_line = LINE.with(|line| line.get());
-                let token_column = COLUMN.with(|column| column.get());
-                Err(cfpl_source_code.error_string_manual(
-                    token_line,
-                    token_column,
-                    String::from(other),
-                    "Invalid character token.".to_string(),
-                ))?
             }
         }
         if !source_code[i].is_whitespace() {
@@ -170,7 +171,7 @@ fn single_symbol(
 }
 
 fn comment_line(source_code: &Vec<char>, mut index: usize) -> usize {
-    while source_code[index] != '\n' {
+    while index < source_code.len() && source_code[index] != '\n' {
         index += 1;
     }
     LINE.with(|line| line.set(line.get() + 1));
@@ -206,20 +207,50 @@ fn character_literal(
     let source_code = &cfpl_source_code.vec;
     let token_line = LINE.with(|line| line.get());
     let token_column = COLUMN.with(|column| column.get());
+    let result = if lexeme::is_single_quote(source_code[index]) {
+        Ok(token::Token::new(
+            token_type::TokenType::LitChar,
+            '\0'.to_string(),
+            token_line,
+            token_column,
+        ))
+    } else if let Ok((result_lexeme, result_index)) =
+        lexeme::special_characters(&cfpl_source_code.vec, index)
+    {
+        index = result_index + 1;
+        match lexeme::is_single_quote(source_code[result_index + 1]) {
+            true => Ok(token::Token::new(
+                token_type::TokenType::LitChar,
+                result_lexeme,
+                token_line,
+                token_column,
+            )),
+            false => Err(result_index),
+        }
+    } else if lexeme::is_single_quote(source_code[index + 1]) {
+        index += 1;
+        Ok(token::Token::new(
+            token_type::TokenType::LitChar,
+            source_code[index - 1].to_string(),
+            token_line,
+            token_column,
+        ))
+    } else {
+        Err(index)
+    };
     let get_char_lit_error = |error_index: usize| -> String {
-        if let Some(character_literal_closing) = source_code[(error_index + 1)..]
+        if let Some(character_literal_closing) = source_code[(error_index)..]
             .iter()
             .position(|&elem| elem == '\'')
         {
+            let index_wtr_global = character_literal_closing + error_index;
             cfpl_source_code.error_string_manual(
                 token_line,
                 token_column,
-                if character_literal_closing - error_index <= 10 {
-                    source_code[error_index..=character_literal_closing]
+                if index_wtr_global - error_index <= 10 {
+                    source_code[error_index..=index_wtr_global]
                         .iter()
                         .collect::<String>()
-                        .escape_debug()
-                        .to_string()
                 } else {
                     let mut ellipse_character_literal = source_code
                         [error_index..=(error_index + 1)]
@@ -227,13 +258,13 @@ fn character_literal(
                         .collect::<String>();
                     ellipse_character_literal.push_str("...");
                     ellipse_character_literal.push_str(
-                        &source_code[(character_literal_closing - 3)..=character_literal_closing]
+                        &source_code[(index_wtr_global - 3)..=index_wtr_global]
                             .iter()
                             .collect::<String>(),
                     );
                     ellipse_character_literal
                 },
-                "Invalid character_literal".to_string(),
+                "Invalid character literal".to_string(),
             )
         } else {
             cfpl_source_code.error_string_manual(
@@ -245,46 +276,15 @@ fn character_literal(
                     ellipse_character_literal.push_str("...");
                     ellipse_character_literal
                 },
-                "Unclosed character_literal".to_string(),
+                "Unclosed character literal".to_string(),
             )
         }
-    };
-    let result = if lexeme::is_single_quote(source_code[index]) {
-        Ok(token::Token::new(
-            token_type::TokenType::LitChar,
-            '\0'.to_string(),
-            token_line,
-            token_column,
-        ))
-    } else if let Ok((result_lexeme, result_index)) =
-        lexeme::special_characters(&cfpl_source_code.vec, index)
-    {
-        index = result_index;
-        match lexeme::is_single_quote(source_code[result_index + 1]) {
-            true => Ok(token::Token::new(
-                token_type::TokenType::LitChar,
-                result_lexeme,
-                token_line,
-                token_column,
-            )),
-            false => Err(get_char_lit_error(result_index)),
-        }
-    } else if lexeme::is_single_quote(source_code[index + 1]) {
-        index += 1;
-        Ok(token::Token::new(
-            token_type::TokenType::LitChar,
-            source_code[index - 1].to_string(),
-            token_line,
-            token_column,
-        ))
-    } else {
-        Err(get_char_lit_error(index))
     };
     match result {
         Ok(result) => {
             tokens.push(result);
             Ok(index)
         }
-        Err(err) => Err(err),
+        Err(error_index) => Err(get_char_lit_error(error_index)),
     }
 }

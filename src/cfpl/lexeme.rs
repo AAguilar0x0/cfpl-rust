@@ -157,10 +157,7 @@ fn escape_character(
         false,
     ) {
         Ok((result_state, result_index)) => match final_state.contains(&result_state) {
-            true => Ok((
-                source_code_vec[index..result_index].iter().collect(),
-                result_index,
-            )),
+            true => Ok((source_code_vec[result_index - 1].to_string(), result_index)),
             false => Err(("Invalid escape.".to_string(), 1)),
         },
         Err(_) => Err(("Unclosed escape.".to_string(), 0)),
