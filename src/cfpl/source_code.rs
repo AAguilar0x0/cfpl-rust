@@ -39,7 +39,7 @@ impl SourceCode {
         error_point.push_str("^");
         let error_line = token.line + 1;
         let error_column = token.column + 1;
-        format!("{message}\n[line: {error_line} column: {error_column}] on {token}\n{line_code}\n{error_point}")
+        format!("{message}\nline-{error_line}:column-{error_column}: {token}\n{line_code}\n{error_point}")
     }
 
     pub fn error_string_manual(

@@ -14,122 +14,134 @@ pub fn lexical_analysis(
     let mut tokens: Vec<token::Token> = Vec::new();
     let source_code = &cfpl_source_code.vec;
     let mut i: usize = 0;
-    let debug_length = source_code.len();
-    let mut debug_current_character = source_code[i].clone();
-    let mut debug_current_column = COLUMN.with(|column| column.get());
-    let mut debug_current_line = LINE.with(|line| line.get());
-    let mut debug_first_in_line = FIRST_IN_LINE.with(|first_in_line| first_in_line.get());
+    let _debug_length = source_code.len();
+    let mut _debug_current_character = source_code[i].clone();
+    let mut _debug_current_column = COLUMN.with(|column| column.get());
+    let mut _debug_current_line = LINE.with(|line| line.get());
+    let mut _debug_first_in_line = FIRST_IN_LINE.with(|first_in_line| first_in_line.get());
     while i < source_code.len() {
-        debug_current_character = source_code[i].clone();
-        debug_current_column = COLUMN.with(|column| column.get());
-        debug_current_line = LINE.with(|line| line.get());
-        debug_first_in_line = FIRST_IN_LINE.with(|first_in_line| first_in_line.get());
-        match source_code[i] {
-            '\n' => {
-                FIRST_IN_LINE.with(|first_in_line| {
-                    if !first_in_line.get() {
-                        first_in_line.set(true);
-                        LINE.with(|line| {
-                            tokens.push(token::Token::new(
-                                token_type::TokenType::Eol,
-                                String::from("EOL"),
-                                line.get(),
-                                0,
-                            ))
-                        });
-                    }
-                });
-                LINE.with(|line| line.set(line.get() + 1));
-                COLUMN.with(|column| column.set(0));
-                i += 1;
-                continue;
-            }
-            '(' => {
-                single_symbol(&cfpl_source_code, &mut tokens, i)?;
-            }
-            ')' => {
-                single_symbol(&cfpl_source_code, &mut tokens, i)?;
-            }
-            ',' => {
-                single_symbol(&cfpl_source_code, &mut tokens, i)?;
-            }
-            ':' => {
-                single_symbol(&cfpl_source_code, &mut tokens, i)?;
-            }
-            '+' => {
-                single_symbol(&cfpl_source_code, &mut tokens, i)?;
-            }
-            '-' => {
-                single_symbol(&cfpl_source_code, &mut tokens, i)?;
-            }
-            '/' => {
-                single_symbol(&cfpl_source_code, &mut tokens, i)?;
-            }
-            '%' => {
-                single_symbol(&cfpl_source_code, &mut tokens, i)?;
-            }
-            '*' => {
-                if FIRST_IN_LINE.with(|first_in_line| first_in_line.get()) {
-                    let index = comment_line(&source_code, i);
-                    i = index + 1;
-                    continue;
-                } else {
+        _debug_current_character = source_code[i].clone();
+        _debug_current_column = COLUMN.with(|column| column.get());
+        _debug_current_line = LINE.with(|line| line.get());
+        _debug_first_in_line = FIRST_IN_LINE.with(|first_in_line| first_in_line.get());
+        let (index_result, column_result, is_override_fil): (usize, Result<usize, usize>, bool) =
+            match source_code[i] {
+                '\n' => {
+                    FIRST_IN_LINE.with(|first_in_line| {
+                        if !first_in_line.get() {
+                            first_in_line.set(true);
+                            LINE.with(|line| {
+                                tokens.push(token::Token::new(
+                                    token_type::TokenType::Eol,
+                                    String::from("EOL"),
+                                    line.get(),
+                                    0,
+                                ))
+                            });
+                        }
+                    });
+                    LINE.with(|line| line.set(line.get() + 1));
+                    (0, Err(0), false)
+                }
+                '(' => {
                     single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    (0, Ok(0), false)
                 }
-            }
-            '=' => {
-                let index = single_double_symbol(
-                    &source_code,
-                    &mut tokens,
-                    i,
-                    lexeme::possibly_equal_assignment,
-                );
-                COLUMN.with(|column| column.set(column.get() + index - i));
-                i = index;
-            }
-            '<' => {
-                let index = single_double_symbol(
-                    &source_code,
-                    &mut tokens,
-                    i,
-                    lexeme::possibly_lesser_lesser_equal_notequal,
-                );
-                COLUMN.with(|column| column.set(column.get() + index - i));
-                i = index;
-            }
-            '>' => {
-                let index = single_double_symbol(
-                    &source_code,
-                    &mut tokens,
-                    i,
-                    lexeme::possibly_greater_greater_equal,
-                );
-                COLUMN.with(|column| column.set(column.get() + index - i));
-                i = index;
-            }
-            other => {
-                if lexeme::is_single_quote(other) {
-                    let index = character_literal(&cfpl_source_code, &mut tokens, i)?;
-                    COLUMN.with(|column| column.set(column.get() + index - i));
-                    i = index;
-                } else if lexeme::is_double_quote(other) {
-                } else {
-                    let token_line = LINE.with(|line| line.get());
-                    let token_column = COLUMN.with(|column| column.get());
-                    Err(cfpl_source_code.error_string_manual(
-                        token_line,
-                        token_column,
-                        String::from(other),
-                        "Invalid character token.".to_string(),
-                    ))?
+                ')' => {
+                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    (0, Ok(0), false)
                 }
-            }
-        }
-        if !source_code[i].is_whitespace() {
+                ',' => {
+                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    (0, Ok(0), false)
+                }
+                ':' => {
+                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    (0, Ok(0), false)
+                }
+                '+' => {
+                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    (0, Ok(0), false)
+                }
+                '-' => {
+                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    (0, Ok(0), false)
+                }
+                '/' => {
+                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    (0, Ok(0), false)
+                }
+                '%' => {
+                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    (0, Ok(0), false)
+                }
+                '*' => {
+                    if FIRST_IN_LINE.with(|first_in_line| first_in_line.get()) {
+                        let index = comment_line(&source_code, i);
+                        LINE.with(|line| line.set(line.get() + 1));
+                        FIRST_IN_LINE.with(|first_in_line| first_in_line.set(true));
+                        (index - i, Err(0), true)
+                    } else {
+                        single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                        (0, Ok(0), false)
+                    }
+                }
+                '=' => {
+                    let index = single_double_symbol(
+                        &source_code,
+                        &mut tokens,
+                        i,
+                        lexeme::possibly_equal_assignment,
+                    );
+                    (index - i, Ok(index - i), false)
+                }
+                '<' => {
+                    let index = single_double_symbol(
+                        &source_code,
+                        &mut tokens,
+                        i,
+                        lexeme::possibly_lesser_lesser_equal_notequal,
+                    );
+                    (index - i, Ok(index - i), false)
+                }
+                '>' => {
+                    let index = single_double_symbol(
+                        &source_code,
+                        &mut tokens,
+                        i,
+                        lexeme::possibly_greater_greater_equal,
+                    );
+                    (index - i, Ok(index - i), false)
+                }
+                other => {
+                    if lexeme::is_single_quote(other) {
+                        let index = character_literal(&cfpl_source_code, &mut tokens, i)?;
+                        (index - i, Ok(index - i), false)
+                    } else if lexeme::is_double_quote(other) {
+                        (0, Ok(0), false)
+                    } else {
+                        let token_line = LINE.with(|line| line.get());
+                        let token_column = COLUMN.with(|column| column.get());
+                        Err(cfpl_source_code.error_string_manual(
+                            token_line,
+                            token_column,
+                            String::from(other),
+                            "Invalid character token.".to_string(),
+                        ))?;
+                        (0, Ok(0), false)
+                    }
+                }
+            };
+        if !is_override_fil && !source_code[i].is_whitespace() {
             FIRST_IN_LINE.with(|first_in_line| first_in_line.set(false));
         }
-        i += 1;
-        COLUMN.with(|column| column.set(column.get() + 1));
+        i += index_result + 1;
+        match column_result {
+            Ok(increment_value) => {
+                COLUMN.with(|column| column.set(column.get() + increment_value + 1))
+            }
+            Err(no_increment_value) => COLUMN.with(|column| column.set(no_increment_value)),
+        }
     }
     LINE.with(|line| {
         tokens.push(token::Token::new(
@@ -174,9 +186,9 @@ fn comment_line(source_code: &Vec<char>, mut index: usize) -> usize {
     while index < source_code.len() && source_code[index] != '\n' {
         index += 1;
     }
-    LINE.with(|line| line.set(line.get() + 1));
-    COLUMN.with(|column| column.set(0));
-    FIRST_IN_LINE.with(|first_in_line| first_in_line.set(true));
+    // LINE.with(|line| line.set(line.get() + 1));
+    // COLUMN.with(|column| column.set(0));
+    // FIRST_IN_LINE.with(|first_in_line| first_in_line.set(true));
     return index;
 }
 
@@ -203,6 +215,7 @@ fn character_literal(
     tokens: &mut Vec<token::Token>,
     mut index: usize,
 ) -> Result<usize, String> {
+    let unmod_index = index;
     index += 1;
     let source_code = &cfpl_source_code.vec;
     let token_line = LINE.with(|line| line.get());
@@ -225,7 +238,7 @@ fn character_literal(
                 token_line,
                 token_column,
             )),
-            false => Err(result_index),
+            false => Err(index),
         }
     } else if lexeme::is_single_quote(source_code[index + 1]) {
         index += 1;
@@ -239,21 +252,20 @@ fn character_literal(
         Err(index)
     };
     let get_char_lit_error = |error_index: usize| -> String {
-        if let Some(character_literal_closing) = source_code[(error_index)..]
+        if let Some(character_literal_closing) = source_code[(unmod_index + 1)..]
             .iter()
             .position(|&elem| elem == '\'')
         {
-            let index_wtr_global = character_literal_closing + error_index;
+            let index_wtr_global = unmod_index + character_literal_closing + 1;
             cfpl_source_code.error_string_manual(
                 token_line,
-                token_column,
+                token_column + (error_index - unmod_index),
                 if index_wtr_global - error_index <= 10 {
-                    source_code[error_index..=index_wtr_global]
+                    source_code[unmod_index..=index_wtr_global]
                         .iter()
                         .collect::<String>()
                 } else {
-                    let mut ellipse_character_literal = source_code
-                        [error_index..=(error_index + 1)]
+                    let mut ellipse_character_literal = source_code[unmod_index..=error_index]
                         .iter()
                         .collect::<String>();
                     ellipse_character_literal.push_str("...");
