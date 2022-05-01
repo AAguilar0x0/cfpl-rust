@@ -18,7 +18,7 @@ pub fn source_code(source_code_string: String) {
     // Debugging purposes
     print!("Tokens:");
     for token in &tokens {
-        print!("\n{}", token);
+        print!("\n{token} {} {}", token.line + 1, token.column + 1);
     }
 }
 

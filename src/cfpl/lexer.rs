@@ -30,14 +30,14 @@ pub fn lexical_analysis(
                     FIRST_IN_LINE.with(|first_in_line| {
                         if !first_in_line.get() {
                             first_in_line.set(true);
-                            LINE.with(|line| {
-                                tokens.push(token::Token::new(
-                                    token_type::TokenType::Eol,
-                                    String::from("EOL"),
-                                    line.get(),
-                                    0,
-                                ))
-                            });
+                            let token_line = LINE.with(|line| line.get());
+                            let token_column = COLUMN.with(|column| column.get());
+                            tokens.push(token::Token::new(
+                                token_type::TokenType::Eol,
+                                String::from("EOL"),
+                                token_line,
+                                token_column,
+                            ))
                         }
                     });
                     LINE.with(|line| line.set(line.get() + 1));
@@ -118,7 +118,15 @@ pub fn lexical_analysis(
                         let index = character_literal(&cfpl_source_code, &mut tokens, i)?;
                         (index - i, Ok(index - i), false)
                     } else if lexeme::is_double_quote(other) {
-                        (0, Ok(0), false)
+                        if let Some(index_result) = bool_literal(&cfpl_source_code, &mut tokens, i)
+                        {
+                            (index_result - i, Ok(index_result - i), false)
+                        } else {
+                            let (index_result, line_result, column_result) =
+                                string_literal(&cfpl_source_code, &mut tokens, i)?;
+                            LINE.with(|line| line.set(line_result));
+                            (index_result - i, Err(column_result), false)
+                        }
                     } else {
                         let token_line = LINE.with(|line| line.get());
                         let token_column = COLUMN.with(|column| column.get());
@@ -186,9 +194,6 @@ fn comment_line(source_code: &Vec<char>, mut index: usize) -> usize {
     while index < source_code.len() && source_code[index] != '\n' {
         index += 1;
     }
-    // LINE.with(|line| line.set(line.get() + 1));
-    // COLUMN.with(|column| column.set(0));
-    // FIRST_IN_LINE.with(|first_in_line| first_in_line.set(true));
     return index;
 }
 
@@ -299,4 +304,90 @@ fn character_literal(
         }
         Err(error_index) => Err(get_char_lit_error(error_index)),
     }
+}
+
+fn bool_literal(
+    cfpl_source_code: &source_code::SourceCode,
+    tokens: &mut Vec<token::Token>,
+    index: usize,
+) -> Option<usize> {
+    let token_line = LINE.with(|line| line.get());
+    let token_column = COLUMN.with(|column| column.get());
+    match lexeme::bool_lex(&cfpl_source_code.vec, index) {
+        Ok((lexeme_result, index_result)) => match index_result > index {
+            true => {
+                tokens.push(token::Token::new(
+                    token_type::TokenType::LitBool,
+                    lexeme_result,
+                    token_line,
+                    token_column,
+                ));
+                Some(index_result)
+            }
+            false => None,
+        },
+        Err(_) => None,
+    }
+}
+
+fn string_literal(
+    cfpl_source_code: &source_code::SourceCode,
+    tokens: &mut Vec<token::Token>,
+    mut index: usize,
+) -> Result<(usize, usize, usize), String> {
+    let token_line = LINE.with(|line| line.get());
+    let token_column = COLUMN.with(|column| column.get());
+    let source_code = &cfpl_source_code.vec;
+    let mut literal_value = String::new();
+    let start_index = index;
+    let mut line = token_line;
+    let mut column = token_column + 1;
+    index += 1;
+    while index < source_code.len() {
+        if source_code[index] == '\n' {
+            line += 1;
+            column = 0;
+        }
+        if lexeme::is_double_quote(source_code[index]) {
+            column += 1;
+            break;
+        }
+        literal_value.push_str(
+            match lexeme::special_characters(source_code, index) {
+                Ok((lexeme_result, index_result)) => {
+                    index = index_result;
+                    lexeme_result
+                }
+                Err((error_message, error_index, error_type)) => {
+                    match matches!(error_type, lexeme::SpecialCharError::InvalidSpecialChar) {
+                        true => source_code[index].to_string(),
+                        false => {
+                            return Err(cfpl_source_code.error_string_manual(
+                                line,
+                                column + error_index - start_index,
+                                {
+                                    let mut error_code = source_code[start_index..=error_index]
+                                        .iter()
+                                        .collect::<String>();
+                                    error_code.push_str("...");
+                                    error_code
+                                },
+                                error_message,
+                            ))
+                        }
+                    }
+                }
+            }
+            .as_str(),
+        );
+        index += 1;
+        column += 1;
+    }
+    tokens.push(token::Token::new(
+        token_type::TokenType::LitStr,
+        literal_value,
+        line,
+        token_column,
+    ));
+    Ok((index, line, column))
 }

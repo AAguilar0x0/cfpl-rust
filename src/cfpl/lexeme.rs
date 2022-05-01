@@ -126,10 +126,16 @@ fn evaluate_dfa(
     Ok(result)
 }
 
+pub enum SpecialCharError {
+    InvalidEscape,
+    UnclosedEscape,
+    InvalidSpecialChar,
+}
+
 fn escape_character(
     source_code_vec: &Vec<char>,
     index: usize,
-) -> Result<(String, usize), (String, usize)> {
+) -> Result<(String, usize), (String, usize, SpecialCharError)> {
     let transition_table: &[&[usize]] = &[
         //[, *, ]
         &[1, 4, 4], // 0
@@ -158,19 +164,90 @@ fn escape_character(
     ) {
         Ok((result_state, result_index)) => match final_state.contains(&result_state) {
             true => Ok((source_code_vec[result_index - 1].to_string(), result_index)),
-            false => Err(("Invalid escape.".to_string(), 1)),
+            false => Err((
+                "Invalid escape.".to_string(),
+                result_index,
+                SpecialCharError::InvalidEscape,
+            )),
         },
-        Err(_) => Err(("Unclosed escape.".to_string(), 0)),
+        Err((_, error_index)) => Err((
+            "Unclosed escape.".to_string(),
+            error_index,
+            SpecialCharError::UnclosedEscape,
+        )),
     }
 }
 
 pub fn special_characters(
     source_code_vec: &Vec<char>,
     index: usize,
-) -> Result<(String, usize), (String, usize)> {
+) -> Result<(String, usize), (String, usize, SpecialCharError)> {
     match source_code_vec[index] {
         '[' | ']' => escape_character(source_code_vec, index),
         '#' => Ok(("\n".to_string(), index)),
-        _ => Err(("Invalid special character.".to_string(), 2)),
+        _ => Err((
+            "Invalid special character.".to_string(),
+            index,
+            SpecialCharError::InvalidSpecialChar,
+        )),
+    }
+}
+
+pub fn bool_lex(
+    source_code_vec: &Vec<char>,
+    index: usize,
+) -> Result<(String, usize), (String, usize)> {
+    let transition_table: &[&[usize]] = &[
+        //F, A, L, S, E, T, R, U, "
+        &[1, 9, 9, 9, 9, 7, 9, 9, 9], // 0
+        &[9, 2, 9, 9, 9, 9, 9, 9, 9], // 1
+        &[9, 9, 3, 9, 9, 9, 9, 9, 9], // 2
+        &[9, 9, 9, 4, 9, 9, 9, 9, 9], // 3
+        &[9, 9, 9, 9, 5, 9, 9, 9, 9], // 4
+        &[9, 9, 9, 9, 9, 9, 9, 9, 6], // 5
+        &[6, 6, 6, 6, 6, 6, 6, 6, 6], // 6
+        &[9, 9, 9, 9, 9, 9, 8, 9, 9], // 7
+        &[9, 9, 9, 9, 9, 9, 9, 4, 9], // 8
+        &[9, 9, 9, 9, 9, 9, 9, 9, 9], // 9
+    ];
+    let final_state: HashSet<usize> = HashSet::from([6]);
+    let dead_state: HashSet<usize> = HashSet::from([9]);
+    let map_char_to_int = |alphabet: char| match alphabet {
+        'F' => 0,
+        'A' => 1,
+        'L' => 2,
+        'S' => 3,
+        'E' => 4,
+        'T' => 5,
+        'R' => 6,
+        'U' => 7,
+        other => {
+            if is_double_quote(other) {
+                8
+            } else {
+                -1
+            }
+        }
+    };
+    match evaluate_dfa(
+        source_code_vec,
+        index + 1,
+        0,
+        transition_table,
+        &final_state,
+        &dead_state,
+        map_char_to_int,
+        true,
+    ) {
+        Ok((result_state, result_index)) => match final_state.contains(&result_state) {
+            true => Ok((
+                source_code_vec[(index + 1)..result_index]
+                    .iter()
+                    .collect::<String>(),
+                result_index,
+            )),
+            false => Ok(("".to_string(), index)),
+        },
+        Err((_, error_index)) => Err(("Unclosed bool literal.".to_string(), error_index)),
     }
 }
