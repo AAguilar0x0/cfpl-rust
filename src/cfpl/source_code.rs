@@ -23,7 +23,7 @@ impl SourceCode {
                 if line == line_number {
                     break;
                 }
-                line = line + 1;
+                line += 1;
             }
         }
         String::from(&self.source_code[start..end])
@@ -36,7 +36,7 @@ impl SourceCode {
         } else {
             token.column as usize
         });
-        error_point.push_str("^");
+        error_point.push('^');
         let error_line = token.line + 1;
         let error_column = token.column + 1;
         format!("{message}\nline-{error_line}:column-{error_column}: {token}\n{line_code}\n{error_point}")
@@ -51,7 +51,7 @@ impl SourceCode {
     ) -> String {
         let line_code = self.get_code_at_line(line as usize);
         let mut error_point = " ".repeat(column);
-        error_point.push_str("^");
+        error_point.push('^');
         let error_line = line + 1;
         let error_column = column + 1;
         format!(

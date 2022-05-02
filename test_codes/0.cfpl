@@ -1,14 +1,32 @@
-(),:+-/%*
-<
-<=
-<>
->
->=
-=
-==
-'a'
-'&'
-'9'
-"TRUE "
-* nothing here
-* '[[]]'
+* input: -60
+* [-61]
+* 10
+* 1
+* FALSE
+VAR xyz, abc=100 AS INT
+START
+    xyz= ((abc *5)/10 + 10) * -1
+    * xyz should have the value -60
+    OUTPUT: "input: "
+    INPUT: xyz
+    IF(xyz > -60 OR xyz == -60)
+        START
+            xyz = xyz - 1
+        STOP
+    ELSE
+        START
+            xyz = xyz + 1
+        STOP
+        
+    OUTPUT: "[[]" & xyz & "[]]"
+    
+    WHILE(xyz < 10)
+        START
+            xyz = xyz + 1
+        STOP
+        
+    OUTPUT: "#" & xyz
+    xyz = 5 % 2
+    OUTPUT: "#" & xyz & "#"
+    OUTPUT: NOT(xyz < 1) AND "FALSE"
+STOP

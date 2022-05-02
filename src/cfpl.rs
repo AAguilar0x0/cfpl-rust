@@ -16,9 +16,24 @@ pub fn source_code(source_code_string: String) {
         Err(error) => return print!("[Lexical-Analysis-Error]: {}", error),
     };
     // Debugging purposes
-    print!("Tokens:");
+    // print!("Tokens:");
+    // for token in &tokens {
+    //     print!("\n{token} {} {}", token.line + 1, token.column + 1);
+    // }
     for token in &tokens {
-        print!("\n{token} {} {}", token.line + 1, token.column + 1);
+        print!(
+            "{}{}",
+            if matches!(token.token_type, token_type::TokenType::Eol) {
+                "\n"
+            } else {
+                token.lexeme.as_str()
+            },
+            if matches!(token.token_type, token_type::TokenType::Eol) {
+                ""
+            } else {
+                " "
+            }
+        );
     }
 }
 

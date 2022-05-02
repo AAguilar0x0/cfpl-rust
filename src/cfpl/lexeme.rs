@@ -2,8 +2,8 @@
 use super::token_type::TokenType;
 use std::collections::HashSet;
 
-pub fn static_lexeme_to_token_type(lexeme: String) -> Result<TokenType, String> {
-    match lexeme.as_str() {
+pub fn static_lexeme_to_token_type(lexeme: &str) -> Result<TokenType, String> {
+    match lexeme {
         "(" => Ok(TokenType::SymLeftParenthesis),
         ")" => Ok(TokenType::SymRightParenthesis),
         "," => Ok(TokenType::SymComma),
@@ -42,7 +42,7 @@ pub fn static_lexeme_to_token_type(lexeme: String) -> Result<TokenType, String> 
 }
 
 pub fn possibly_equal_assignment(
-    source_code_vec: &Vec<char>,
+    source_code_vec: &[char],
     index: usize,
 ) -> (TokenType, String, usize) {
     if index + 1 < source_code_vec.len() && source_code_vec[index + 1] == '=' {
@@ -53,7 +53,7 @@ pub fn possibly_equal_assignment(
 }
 
 pub fn possibly_lesser_lesser_equal_notequal(
-    source_code_vec: &Vec<char>,
+    source_code_vec: &[char],
     index: usize,
 ) -> (TokenType, String, usize) {
     let is_not_eof = index + 1 < source_code_vec.len();
@@ -67,7 +67,7 @@ pub fn possibly_lesser_lesser_equal_notequal(
 }
 
 pub fn possibly_greater_greater_equal(
-    source_code_vec: &Vec<char>,
+    source_code_vec: &[char],
     index: usize,
 ) -> (TokenType, String, usize) {
     if index + 1 < source_code_vec.len() && source_code_vec[index + 1] == '=' {
@@ -78,27 +78,21 @@ pub fn possibly_greater_greater_equal(
 }
 
 pub fn is_single_quote(lexeme: char) -> bool {
-    match lexeme {
-        '\'' | '`' => true,
-        '‘' | '\u{2018}' => true,
-        '’' | '\u{2019}' => true,
-        '‛' | '\u{201B}' => true,
-        _ => false,
-    }
+    matches!(
+        lexeme,
+        '\'' | '`' | '‘' | '\u{2018}' | '’' | '\u{2019}' | '‛' | '\u{201B}'
+    )
 }
 
 pub fn is_double_quote(lexeme: char) -> bool {
-    match lexeme {
-        '"' => true,
-        '“' | '\u{201C}' => true,
-        '”' | '\u{201D}' => true,
-        '‟' | '\u{201F}' => true,
-        _ => false,
-    }
+    matches!(
+        lexeme,
+        '"' | '“' | '\u{201C}' | '”' | '\u{201D}' | '‟' | '\u{201F}'
+    )
 }
 
 fn evaluate_dfa(
-    source_code_vec: &Vec<char>,
+    source_code_vec: &[char],
     mut index: usize,
     initial_state: usize,
     transition_table: &[&[usize]],
@@ -120,7 +114,7 @@ fn evaluate_dfa(
         index += 1;
     }
     let result = (current_state, index - 1);
-    if index == source_code_vec.len() {
+    if !terminate_if_any && index == source_code_vec.len() {
         return Err(result);
     }
     Ok(result)
@@ -132,8 +126,8 @@ pub enum SpecialCharError {
     InvalidSpecialChar,
 }
 
-fn escape_character(
-    source_code_vec: &Vec<char>,
+fn escape_character_dfa(
+    source_code_vec: &[char],
     index: usize,
 ) -> Result<(String, usize), (String, usize, SpecialCharError)> {
     let transition_table: &[&[usize]] = &[
@@ -179,11 +173,11 @@ fn escape_character(
 }
 
 pub fn special_characters(
-    source_code_vec: &Vec<char>,
+    source_code_vec: &[char],
     index: usize,
 ) -> Result<(String, usize), (String, usize, SpecialCharError)> {
     match source_code_vec[index] {
-        '[' | ']' => escape_character(source_code_vec, index),
+        '[' | ']' => escape_character_dfa(source_code_vec, index),
         '#' => Ok(("\n".to_string(), index)),
         _ => Err((
             "Invalid special character.".to_string(),
@@ -193,8 +187,8 @@ pub fn special_characters(
     }
 }
 
-pub fn bool_lex(
-    source_code_vec: &Vec<char>,
+pub fn bool_dfa(
+    source_code_vec: &[char],
     index: usize,
 ) -> Result<(String, usize), (String, usize)> {
     let transition_table: &[&[usize]] = &[
@@ -249,5 +243,108 @@ pub fn bool_lex(
             false => Ok(("".to_string(), index)),
         },
         Err((_, error_index)) => Err(("Unclosed bool literal.".to_string(), error_index)),
+    }
+}
+
+pub fn number_dfa(
+    source_code_vec: &[char],
+    index: usize,
+) -> Result<(String, usize, TokenType), (String, usize)> {
+    let transition_table: &[&[usize]] = &[
+        //D, .
+        &[1, 3], // 0
+        &[1, 2], // 1
+        &[4, 5], // 2
+        &[4, 5], // 3
+        &[4, 5], // 4
+        &[5, 5], // 5
+    ];
+    let final_state: HashSet<usize> = HashSet::from([1, 2, 4]);
+    let dead_state: HashSet<usize> = HashSet::from([5]);
+    let map_char_to_int = |alphabet: char| match alphabet {
+        '.' => 1,
+        other => {
+            if other.is_digit(10) {
+                0
+            } else {
+                -1
+            }
+        }
+    };
+    match evaluate_dfa(
+        source_code_vec,
+        index,
+        0,
+        transition_table,
+        &final_state,
+        &dead_state,
+        map_char_to_int,
+        true,
+    ) {
+        Ok((result_state, result_index)) => match final_state.contains(&result_state) {
+            true => Ok((
+                source_code_vec[index..=result_index]
+                    .iter()
+                    .collect::<String>(),
+                result_index,
+                match result_state {
+                    1 => TokenType::LitInt,
+                    _ => TokenType::LitFloat,
+                },
+            )),
+            false => Err(("Invalid number literal.".to_string(), result_index)),
+        },
+        Err((_, error_index)) => Err(("Unclosed code block.".to_string(), error_index)),
+    }
+}
+
+pub fn words_dfa(
+    source_code_vec: &[char],
+    index: usize,
+) -> Result<(String, usize, TokenType), (String, usize)> {
+    let transition_table: &[&[usize]] = &[
+        //_, $, A, D
+        &[1, 1, 1, 2], // 0
+        &[1, 1, 1, 1], // 1
+        &[2, 2, 2, 2], // 2
+    ];
+    let final_state: HashSet<usize> = HashSet::from([1]);
+    let dead_state: HashSet<usize> = HashSet::from([2]);
+    let map_char_to_int = |alphabet: char| match alphabet {
+        '_' => 0,
+        '$' => 1,
+        other => {
+            if other.is_ascii_alphabetic() {
+                2
+            } else if other.is_digit(10) {
+                3
+            } else {
+                -1
+            }
+        }
+    };
+    match evaluate_dfa(
+        source_code_vec,
+        index,
+        0,
+        transition_table,
+        &final_state,
+        &dead_state,
+        map_char_to_int,
+        true,
+    ) {
+        Ok((result_state, result_index)) => match final_state.contains(&result_state) {
+            true => {
+                let lexeme = source_code_vec[index..=result_index]
+                    .iter()
+                    .collect::<String>();
+                match static_lexeme_to_token_type(lexeme.as_str()) {
+                    Ok(token_type) => Ok((lexeme, result_index, token_type)),
+                    Err(_) => Ok((lexeme, result_index, TokenType::Identifier)),
+                }
+            }
+            false => Err(("Invalid syntax.".to_string(), result_index)),
+        },
+        Err((_, error_index)) => Err(("Invalid syntax.".to_string(), error_index)),
     }
 }

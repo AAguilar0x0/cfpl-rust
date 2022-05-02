@@ -15,12 +15,12 @@ pub fn lexical_analysis(
     let source_code = &cfpl_source_code.vec;
     let mut i: usize = 0;
     let _debug_length = source_code.len();
-    let mut _debug_current_character = source_code[i].clone();
+    let mut _debug_current_character = source_code[i];
     let mut _debug_current_column = COLUMN.with(|column| column.get());
     let mut _debug_current_line = LINE.with(|line| line.get());
     let mut _debug_first_in_line = FIRST_IN_LINE.with(|first_in_line| first_in_line.get());
     while i < source_code.len() {
-        _debug_current_character = source_code[i].clone();
+        _debug_current_character = source_code[i];
         _debug_current_column = COLUMN.with(|column| column.get());
         _debug_current_line = LINE.with(|line| line.get());
         _debug_first_in_line = FIRST_IN_LINE.with(|first_in_line| first_in_line.get());
@@ -31,12 +31,11 @@ pub fn lexical_analysis(
                         if !first_in_line.get() {
                             first_in_line.set(true);
                             let token_line = LINE.with(|line| line.get());
-                            let token_column = COLUMN.with(|column| column.get());
                             tokens.push(token::Token::new(
                                 token_type::TokenType::Eol,
                                 String::from("EOL"),
-                                token_line,
-                                token_column,
+                                token_line + 1,
+                                0,
                             ))
                         }
                     });
@@ -44,51 +43,55 @@ pub fn lexical_analysis(
                     (0, Err(0), false)
                 }
                 '(' => {
-                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    single_symbol(cfpl_source_code, &mut tokens, i)?;
                     (0, Ok(0), false)
                 }
                 ')' => {
-                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    single_symbol(cfpl_source_code, &mut tokens, i)?;
                     (0, Ok(0), false)
                 }
                 ',' => {
-                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    single_symbol(cfpl_source_code, &mut tokens, i)?;
                     (0, Ok(0), false)
                 }
                 ':' => {
-                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    single_symbol(cfpl_source_code, &mut tokens, i)?;
+                    (0, Ok(0), false)
+                }
+                '&' => {
+                    single_symbol(cfpl_source_code, &mut tokens, i)?;
                     (0, Ok(0), false)
                 }
                 '+' => {
-                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    single_symbol(cfpl_source_code, &mut tokens, i)?;
                     (0, Ok(0), false)
                 }
                 '-' => {
-                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    single_symbol(cfpl_source_code, &mut tokens, i)?;
                     (0, Ok(0), false)
                 }
                 '/' => {
-                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    single_symbol(cfpl_source_code, &mut tokens, i)?;
                     (0, Ok(0), false)
                 }
                 '%' => {
-                    single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                    single_symbol(cfpl_source_code, &mut tokens, i)?;
                     (0, Ok(0), false)
                 }
                 '*' => {
                     if FIRST_IN_LINE.with(|first_in_line| first_in_line.get()) {
-                        let index = comment_line(&source_code, i);
+                        let index = comment_line(source_code, i);
                         LINE.with(|line| line.set(line.get() + 1));
                         FIRST_IN_LINE.with(|first_in_line| first_in_line.set(true));
                         (index - i, Err(0), true)
                     } else {
-                        single_symbol(&cfpl_source_code, &mut tokens, i)?;
+                        single_symbol(cfpl_source_code, &mut tokens, i)?;
                         (0, Ok(0), false)
                     }
                 }
                 '=' => {
                     let index = single_double_symbol(
-                        &source_code,
+                        source_code,
                         &mut tokens,
                         i,
                         lexeme::possibly_equal_assignment,
@@ -97,7 +100,7 @@ pub fn lexical_analysis(
                 }
                 '<' => {
                     let index = single_double_symbol(
-                        &source_code,
+                        source_code,
                         &mut tokens,
                         i,
                         lexeme::possibly_lesser_lesser_equal_notequal,
@@ -106,7 +109,7 @@ pub fn lexical_analysis(
                 }
                 '>' => {
                     let index = single_double_symbol(
-                        &source_code,
+                        source_code,
                         &mut tokens,
                         i,
                         lexeme::possibly_greater_greater_equal,
@@ -115,28 +118,37 @@ pub fn lexical_analysis(
                 }
                 other => {
                     if lexeme::is_single_quote(other) {
-                        let index = character_literal(&cfpl_source_code, &mut tokens, i)?;
+                        let index = character_literal(cfpl_source_code, &mut tokens, i)?;
                         (index - i, Ok(index - i), false)
                     } else if lexeme::is_double_quote(other) {
-                        if let Some(index_result) = bool_literal(&cfpl_source_code, &mut tokens, i)
-                        {
+                        if let Some(index_result) = bool_literal(cfpl_source_code, &mut tokens, i) {
                             (index_result - i, Ok(index_result - i), false)
                         } else {
                             let (index_result, line_result, column_result) =
-                                string_literal(&cfpl_source_code, &mut tokens, i)?;
+                                string_literal(cfpl_source_code, &mut tokens, i)?;
                             LINE.with(|line| line.set(line_result));
-                            (index_result - i, Err(column_result), false)
+                            (index_result - i, Err(column_result + 1), false)
                         }
+                    } else if source_code[i] == '.' || source_code[i].is_digit(10) {
+                        let index = number_literal(cfpl_source_code, &mut tokens, i)?;
+                        (index - i, Ok(index - i), false)
+                    } else if source_code[i] == '_'
+                        || source_code[i] == '$'
+                        || source_code[i].is_ascii_alphabetic()
+                    {
+                        let index = words(cfpl_source_code, &mut tokens, i)?;
+                        (index - i, Ok(index - i), false)
+                    } else if source_code[i].is_whitespace() {
+                        (0, Ok(0), false)
                     } else {
                         let token_line = LINE.with(|line| line.get());
                         let token_column = COLUMN.with(|column| column.get());
-                        Err(cfpl_source_code.error_string_manual(
+                        return Err(cfpl_source_code.error_string_manual(
                             token_line,
                             token_column,
                             String::from(other),
                             "Invalid character token.".to_string(),
-                        ))?;
-                        (0, Ok(0), false)
+                        ));
                     }
                 }
             };
@@ -169,18 +181,19 @@ fn single_symbol(
 ) -> Result<(), String> {
     let token_line = LINE.with(|line| line.get());
     let token_column = COLUMN.with(|column| column.get());
-    let token_type_here =
-        match lexeme::static_lexeme_to_token_type(String::from(cfpl_source_code.vec[index])) {
-            Ok(result) => result,
-            Err(err) => {
-                return Err(cfpl_source_code.error_string_manual(
-                    token_line,
-                    token_column,
-                    cfpl_source_code.vec[index].to_string(),
-                    err,
-                ))
-            }
-        };
+    let token_type_here = match lexeme::static_lexeme_to_token_type(
+        String::from(cfpl_source_code.vec[index]).as_str(),
+    ) {
+        Ok(result) => result,
+        Err(err) => {
+            return Err(cfpl_source_code.error_string_manual(
+                token_line,
+                token_column,
+                cfpl_source_code.vec[index].to_string(),
+                err,
+            ))
+        }
+    };
     tokens.push(token::Token::new(
         token_type_here,
         String::from(cfpl_source_code.vec[index]),
@@ -190,18 +203,18 @@ fn single_symbol(
     Ok(())
 }
 
-fn comment_line(source_code: &Vec<char>, mut index: usize) -> usize {
+fn comment_line(source_code: &[char], mut index: usize) -> usize {
     while index < source_code.len() && source_code[index] != '\n' {
         index += 1;
     }
-    return index;
+    index
 }
 
 fn single_double_symbol(
-    source_code: &Vec<char>,
+    source_code: &[char],
     tokens: &mut Vec<token::Token>,
     index: usize,
-    get_some_token_value: fn(&Vec<char>, usize) -> (token_type::TokenType, String, usize),
+    get_some_token_value: fn(&[char], usize) -> (token_type::TokenType, String, usize),
 ) -> usize {
     let (token_type, lexeme, index) = get_some_token_value(source_code, index);
     let token_line = LINE.with(|line| line.get());
@@ -313,7 +326,7 @@ fn bool_literal(
 ) -> Option<usize> {
     let token_line = LINE.with(|line| line.get());
     let token_column = COLUMN.with(|column| column.get());
-    match lexeme::bool_lex(&cfpl_source_code.vec, index) {
+    match lexeme::bool_dfa(&cfpl_source_code.vec, index) {
         Ok((lexeme_result, index_result)) => match index_result > index {
             true => {
                 tokens.push(token::Token::new(
@@ -349,12 +362,12 @@ fn string_literal(
             column = 0;
         }
         if lexeme::is_double_quote(source_code[index]) {
-            column += 1;
             break;
         }
         literal_value.push_str(
             match lexeme::special_characters(source_code, index) {
                 Ok((lexeme_result, index_result)) => {
+                    column += index_result - index;
                     index = index_result;
                     lexeme_result
                 }
@@ -386,8 +399,50 @@ fn string_literal(
     tokens.push(token::Token::new(
         token_type::TokenType::LitStr,
         literal_value,
-        line,
+        token_line,
         token_column,
     ));
     Ok((index, line, column))
+}
+
+fn number_literal(
+    cfpl_source_code: &source_code::SourceCode,
+    tokens: &mut Vec<token::Token>,
+    index: usize,
+) -> Result<usize, String> {
+    let token_line = LINE.with(|line| line.get());
+    let token_column = COLUMN.with(|column| column.get());
+    match lexeme::number_dfa(&cfpl_source_code.vec, index) {
+        Ok((lexeme_result, index_result, type_result)) => {
+            tokens.push(token::Token::new(
+                type_result,
+                lexeme_result,
+                token_line,
+                token_column,
+            ));
+            Ok(index_result)
+        }
+        Err((error_message, _)) => Err(error_message),
+    }
+}
+
+fn words(
+    cfpl_source_code: &source_code::SourceCode,
+    tokens: &mut Vec<token::Token>,
+    index: usize,
+) -> Result<usize, String> {
+    let token_line = LINE.with(|line| line.get());
+    let token_column = COLUMN.with(|column| column.get());
+    match lexeme::words_dfa(&cfpl_source_code.vec, index) {
+        Ok((lexeme_result, index_result, type_result)) => {
+            tokens.push(token::Token::new(
+                type_result,
+                lexeme_result,
+                token_line,
+                token_column,
+            ));
+            Ok(index_result)
+        }
+        Err((error_message, _)) => Err(error_message),
+    }
 }
