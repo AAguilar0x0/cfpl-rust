@@ -1,8 +1,8 @@
-pub mod lexeme;
-pub mod lexer;
-pub mod source_code;
-pub mod token;
-pub mod token_type;
+mod lexeme;
+mod lexer;
+mod source_code;
+mod token;
+mod token_type;
 use std::fs;
 use std::io::ErrorKind;
 

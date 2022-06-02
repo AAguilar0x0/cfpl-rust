@@ -1,5 +1,5 @@
-mod cfpl;
+use cfpl;
 
 fn main() {
-    cfpl::file("./test_codes/0.cfpl");
+    cfpl::file("./test_source_codes/0.cfpl");
 }
