@@ -1,7 +1,4 @@
-use super::lexeme;
-use super::source_code;
-use super::token;
-use super::token_type;
+use super::{lexeme, source_code, token, token_type};
 use std::cell::Cell;
 
 thread_local!(static LINE: Cell<usize> = Cell::new(0));
