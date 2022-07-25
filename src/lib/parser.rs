@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{parsing_statements, source_code, token, token_type};
+use super::{source_code, statement, token, token_type};
 
 pub struct Parser<'a> {
     var_declarations: bool,
@@ -9,7 +9,7 @@ pub struct Parser<'a> {
     in_scope: bool,
     scope_counter: usize,
     current: usize,
-    statements: Vec<Box<dyn parsing_statements::ParsingStatement>>,
+    statements: Vec<Box<dyn statement::Statement>>,
     variable_type: HashMap<String, token_type::TokenType>,
     source_code: &'a source_code::SourceCode,
     tokens: &'a Vec<token::Token>,
@@ -19,7 +19,7 @@ impl<'a> Parser<'a> {
     pub fn syntax_analysis(
         source_code: &'a source_code::SourceCode,
         tokens: &'a Vec<token::Token>,
-    ) -> Result<Vec<Box<dyn parsing_statements::ParsingStatement>>, String> {
+    ) -> Result<Vec<Box<dyn statement::Statement>>, String> {
         let parser = Parser {
             var_declarations: false,
             is_declaring: false,

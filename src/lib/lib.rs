@@ -1,10 +1,11 @@
-mod lexeme;
-mod lexer;
-mod parser;
-mod parsing_statements;
-mod source_code;
-mod token;
-mod token_type;
+pub mod expression;
+pub mod lexeme;
+pub mod lexer;
+pub mod parser;
+pub mod source_code;
+pub mod statement;
+pub mod token;
+pub mod token_type;
 use std::fs;
 use std::io::ErrorKind;
 
