@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 pub enum TokenType {
     SymLeftParenthesis,
     SymRightParenthesis,

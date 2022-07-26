@@ -1,4 +1,5 @@
 use crate::{
+    environment::Environment,
     expression::{stringify_primitives, Expression},
     statement::Statement,
 };
@@ -8,8 +9,8 @@ pub struct Print {
 }
 
 impl Statement for Print {
-    fn visit(&self) -> Result<(), &str> {
-        let output = self.expression.visit();
+    fn visit<'a>(&self, environment: &mut Environment) -> Result<(), &'a str> {
+        let output = self.expression.visit(environment)?;
         let value = stringify_primitives(output)?;
         print!("{value}");
         return Ok(());

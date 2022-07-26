@@ -1,3 +1,5 @@
+use crate::environment::Environment;
+
 use super::Statement;
 
 struct Expression {
@@ -5,8 +7,8 @@ struct Expression {
 }
 
 impl Statement for Expression {
-    fn visit(&self) -> Result<(), &str> {
-        self.statement.visit()?;
+    fn visit<'a>(&self, environment: &mut Environment) -> Result<(), &'a str> {
+        self.statement.visit(environment)?;
         return Ok(());
     }
 }

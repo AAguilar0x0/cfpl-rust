@@ -1,3 +1,5 @@
+use crate::environment::Environment;
+
 use super::Statement;
 
 struct Block {
@@ -5,9 +7,9 @@ struct Block {
 }
 
 impl Statement for Block {
-    fn visit(&self) -> Result<(), &str> {
+    fn visit<'a>(&self, environment: &mut Environment) -> Result<(), &'a str> {
         for statement in &self.statements {
-            statement.visit()?;
+            statement.visit(environment)?;
         }
         return Ok(());
     }

@@ -1,3 +1,5 @@
+pub mod data_type;
+pub mod environment;
 pub mod expression;
 pub mod lexeme;
 pub mod lexer;

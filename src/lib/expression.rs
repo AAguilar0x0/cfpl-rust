@@ -1,12 +1,18 @@
 use std::any::Any;
 
+use crate::environment::Environment;
+
+pub mod assign;
+pub mod grouping;
+pub mod literal;
+pub mod logical;
 pub mod variable;
 
 pub trait Expression {
-    fn visit(&self) -> Box<dyn Any>;
+    fn visit<'a>(&self, environment: &mut Environment) -> Result<Box<dyn Any>, &'a str>;
 }
 
-pub fn stringify_primitives<'a>(object: Box<dyn Any>) -> Result<String, &'a str> {
+pub fn stringify_primitives(object: Box<dyn Any>) -> Result<String, &'static str> {
     let string = if let Some(output) = object.downcast_ref::<i32>() {
         output.to_string()
     } else if let Some(output) = object.downcast_ref::<f64>() {

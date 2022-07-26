@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::{data_type::DataType, environment, token::Token};
 
 use super::Expression;
 
@@ -7,7 +7,14 @@ pub struct Variable {
 }
 
 impl Expression for Variable {
-    fn visit(&self) -> Box<dyn std::any::Any> {
-        return Box::new(true);
+    fn visit<'a>(
+        &self,
+        environment: &mut environment::Environment,
+    ) -> Result<Box<dyn std::any::Any>, &'a str> {
+        let value = environment.get(&self.name.lexeme)?;
+        return match DataType::clone_ref_any(value) {
+            Some(value) => Ok(value),
+            None => Err("asdf"),
+        };
     }
 }
