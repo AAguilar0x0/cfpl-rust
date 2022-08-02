@@ -29,7 +29,7 @@ impl SourceCode {
         String::from(&self.source_code[start..end])
     }
 
-    pub fn error_string_token(&self, token: token::Token, message: String) -> String {
+    pub fn error_string_token(&self, token: &token::Token, message: &str) -> String {
         let line_code = self.get_code_at_line(token.line as usize);
         let mut error_point = " ".repeat(if token.column > 0 {
             token.column as usize - 1

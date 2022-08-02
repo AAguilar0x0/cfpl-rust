@@ -14,7 +14,7 @@ impl Expression for Logical {
         environment: &mut crate::environment::Environment,
     ) -> Result<Box<dyn std::any::Any>, &'a str> {
         if self.operator.token_type != TokenType::RkwOr
-            && self.operator.token_type != TokenType::RkwOr
+            && self.operator.token_type != TokenType::RkwAnd
         {
             return Err("Operator must be logical.");
         }
@@ -24,9 +24,9 @@ impl Expression for Logical {
             return Err("Operand must be a boolean.");
         }
         let is_left = is_left.unwrap();
-        if self.operator.token_type == TokenType::RkwOr && *is_left {
-            return Ok(left_value);
-        } else if self.operator.token_type == TokenType::RkwAnd && !*is_left {
+        if (self.operator.token_type == TokenType::RkwOr && *is_left)
+            || (self.operator.token_type == TokenType::RkwAnd && !*is_left)
+        {
             return Ok(left_value);
         } else {
             return Ok(self.right.visit(environment)?);

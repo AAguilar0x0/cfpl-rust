@@ -1,5 +1,7 @@
 use std::any::Any;
 
+use crate::token_type::TokenType;
+
 #[derive(PartialEq)]
 pub enum DataType {
     INT,
@@ -94,6 +96,16 @@ impl DataType {
         let left_value = left.downcast_ref::<bool>().unwrap();
         let right_value = right.downcast_ref::<bool>().unwrap();
         return Ok(left_value == right_value);
+    }
+
+    pub fn get_default_of_type(token_type: TokenType) -> Option<Box<dyn Any>> {
+        return match token_type {
+            TokenType::RkwBool => Some(Box::new(false)),
+            TokenType::RkwChar => Some(Box::new('\0')),
+            TokenType::RkwFloat => Some(Box::new(0.0 as f64)),
+            TokenType::RkwInt => Some(Box::new(0)),
+            _ => None,
+        };
     }
 }
 
