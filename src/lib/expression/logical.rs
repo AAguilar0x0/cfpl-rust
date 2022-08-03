@@ -1,11 +1,13 @@
+use std::any::Any;
+
 use crate::{data_type::DataType, token::Token, token_type::TokenType};
 
 use super::Expression;
 
 pub struct Logical {
-    operator: Token,
-    left: Box<dyn Expression>,
-    right: Box<dyn Expression>,
+    pub operator: Token,
+    pub left: Box<dyn Expression>,
+    pub right: Box<dyn Expression>,
 }
 
 impl Expression for Logical {
@@ -31,5 +33,9 @@ impl Expression for Logical {
         } else {
             return Ok(self.right.visit(environment)?);
         }
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

@@ -126,7 +126,7 @@ pub fn lexical_analysis(
                             LINE.with(|line| line.set(line_result));
                             (index_result - i, Err(column_result + 1), false)
                         }
-                    } else if source_code[i] == '.' || source_code[i].is_digit(10) {
+                    } else if source_code[i] == '.' || source_code[i].is_ascii_digit() {
                         let index = number_literal(cfpl_source_code, &mut tokens, i)?;
                         (index - i, Ok(index - i), false)
                     } else if source_code[i] == '_'

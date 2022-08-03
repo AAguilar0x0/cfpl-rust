@@ -1,4 +1,7 @@
-use std::{any::Any, collections::HashMap};
+use std::{
+    any::Any,
+    collections::{hash_map::Entry, HashMap},
+};
 
 use crate::data_type::DataType;
 
@@ -13,8 +16,8 @@ impl Environment {
     }
 
     pub fn assign(&mut self, name: String, value: Box<dyn Any>) -> Result<(), &'static str> {
-        if self.variables.contains_key(&name) {
-            self.variables.insert(name, value);
+        if let Entry::Occupied(mut variables) = self.variables.entry(name) {
+            variables.insert(value);
         } else {
             return Err("Undefined variable '{name}'");
         }
@@ -31,9 +34,9 @@ impl Environment {
 
     pub fn data_type(&self, name: &str) -> Result<DataType, &'static str> {
         let object = self.variables.get(name);
-        if let None = object {
+        if object.is_none() {
             return Err("Undefined variable '{name}'");
         }
-        return Ok(DataType::any_to_data_type(object.unwrap()).unwrap());
+        return Ok(DataType::box_any_to_data_type(object.unwrap()).unwrap());
     }
 }

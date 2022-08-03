@@ -264,7 +264,7 @@ pub fn number_dfa(
     let map_char_to_int = |alphabet: char| match alphabet {
         '.' => 1,
         other => {
-            if other.is_digit(10) {
+            if other.is_ascii_digit() {
                 0
             } else {
                 -1
@@ -316,7 +316,7 @@ pub fn words_dfa(
         other => {
             if other.is_ascii_alphabetic() {
                 2
-            } else if other.is_digit(10) {
+            } else if other.is_ascii_digit() {
                 3
             } else {
                 -1

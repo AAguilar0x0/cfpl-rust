@@ -1,34 +1,30 @@
 use std::any::Any;
 
-use crate::{data_type::DataType, token::Token, token_type::TokenType};
+use crate::{data_type::DataType, environment::Environment, token::Token, token_type::TokenType};
 
 use super::Expression;
 
 pub struct Binary {
-    operator: Token,
-    left: Box<dyn Expression>,
-    right: Box<dyn Expression>,
+    pub operator: Token,
+    pub left: Box<dyn Expression>,
+    pub right: Box<dyn Expression>,
 }
 
 impl Expression for Binary {
-    fn visit<'a>(
-        &self,
-        environment: &mut crate::environment::Environment,
-    ) -> Result<Box<dyn std::any::Any>, &'a str> {
-        let get_values_data_type = |environment: &mut crate::environment::Environment| -> Result<
-            (Box<dyn Any>, DataType, Box<dyn Any>, DataType),
-            &'a str,
-        > {
-            let left_value = self.left.visit(environment)?;
-            let right_value = self.right.visit(environment)?;
-            DataType::is_are_operands_number(&[&left_value, &right_value])?;
-            let left_dt = DataType::any_to_data_type(&left_value);
-            let right_dt = DataType::any_to_data_type(&right_value);
-            if left_dt.is_none() || right_dt.is_none() {
-                return Err("Invalid operand data type.");
-            }
-            Ok((left_value, left_dt.unwrap(), right_value, right_dt.unwrap()))
-        };
+    fn visit<'a>(&self, environment: &mut Environment) -> Result<Box<dyn std::any::Any>, &'a str> {
+        type TupleOkResult = (Box<dyn Any>, DataType, Box<dyn Any>, DataType);
+        let get_values_data_type =
+            |environment: &mut Environment| -> Result<TupleOkResult, &'a str> {
+                let left_value = self.left.visit(environment)?;
+                let right_value = self.right.visit(environment)?;
+                DataType::is_are_operands_number(&[&left_value, &right_value])?;
+                let left_dt = DataType::box_any_to_data_type(&left_value);
+                let right_dt = DataType::box_any_to_data_type(&right_value);
+                if left_dt.is_none() || right_dt.is_none() {
+                    return Err("Invalid operand data type.");
+                }
+                Ok((left_value, left_dt.unwrap(), right_value, right_dt.unwrap()))
+            };
         match self.operator.token_type {
             TokenType::SymGreater => {
                 let (left_value, left_dt, right_value, right_dt) =
@@ -245,5 +241,9 @@ impl Expression for Binary {
             }
             _ => return Err("Invalid unary operator."),
         };
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

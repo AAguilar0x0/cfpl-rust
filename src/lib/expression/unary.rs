@@ -1,10 +1,12 @@
+use std::any::Any;
+
 use crate::{data_type::DataType, token::Token, token_type::TokenType};
 
 use super::Expression;
 
 pub struct Unary {
-    operator: Token,
-    right: Box<dyn Expression>,
+    pub operator: Token,
+    pub right: Box<dyn Expression>,
 }
 
 impl Expression for Unary {
@@ -23,7 +25,7 @@ impl Expression for Unary {
             }
             TokenType::SymPlus => {
                 let expression = self.right.visit(environment)?;
-                let data_type = DataType::any_to_data_type(&expression);
+                let data_type = DataType::box_any_to_data_type(&expression);
                 if data_type.is_none() {
                     return Err("Invalid operand data type.");
                 }
@@ -34,7 +36,7 @@ impl Expression for Unary {
             }
             TokenType::SymMinus => {
                 let expression = self.right.visit(environment)?;
-                let data_type = DataType::any_to_data_type(&expression);
+                let data_type = DataType::box_any_to_data_type(&expression);
                 if data_type.is_none() {
                     return Err("Invalid operand data type.");
                 }
@@ -46,5 +48,9 @@ impl Expression for Unary {
             }
             _ => return Err("Invalid unary operator."),
         };
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

@@ -5,7 +5,7 @@ use crate::data_type::DataType;
 use super::Expression;
 
 pub struct Literal {
-    value: Box<dyn Any>,
+    pub value: Box<dyn Any>,
 }
 
 impl Expression for Literal {
@@ -14,5 +14,9 @@ impl Expression for Literal {
             Some(value) => Ok(value),
             None => Err("Cannot clone value"),
         };
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

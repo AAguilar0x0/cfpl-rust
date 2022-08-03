@@ -12,4 +12,5 @@ pub mod variable;
 
 pub trait Expression {
     fn visit<'a>(&self, environment: &mut Environment) -> Result<Box<dyn Any>, &'a str>;
+    fn as_any(&self) -> &dyn Any;
 }

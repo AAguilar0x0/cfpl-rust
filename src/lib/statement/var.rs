@@ -3,12 +3,12 @@ use crate::{expression::Expression, token::Token};
 use super::Statement;
 
 pub struct VarDec {
-    name: Token,
-    initializer: Box<dyn Expression>,
+    pub name: Token,
+    pub initializer: Box<dyn Expression>,
 }
 
 pub struct Var {
-    variable_declarations: Vec<Box<VarDec>>,
+    pub variable_declarations: Vec<VarDec>,
 }
 
 impl Statement for Var {
