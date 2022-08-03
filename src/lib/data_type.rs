@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use crate::token_type::TokenType;
+use crate::{token::Token, token_type::TokenType};
 
 #[derive(PartialEq)]
 pub enum DataType {
@@ -26,7 +26,22 @@ impl DataType {
         };
         return Ok(string);
     }
-    pub fn any_to_data_type(object: &Box<dyn Any>) -> Option<DataType> {
+
+    pub fn box_any_to_data_type(object: &Box<dyn Any>) -> Option<DataType> {
+        return if object.is::<i32>() {
+            Some(DataType::INT)
+        } else if object.is::<f64>() {
+            Some(DataType::FLOAT)
+        } else if object.is::<char>() {
+            Some(DataType::CHAR)
+        } else if object.is::<bool>() {
+            Some(DataType::BOOL)
+        } else {
+            None
+        };
+    }
+
+    pub fn any_to_data_type(object: &dyn Any) -> Option<DataType> {
         return if object.is::<i32>() {
             Some(DataType::INT)
         } else if object.is::<f64>() {
@@ -41,11 +56,8 @@ impl DataType {
     }
 
     pub fn clone_ref_any(object: &Box<dyn Any>) -> Option<Box<dyn Any>> {
-        let data_type = DataType::any_to_data_type(object);
-        if data_type.is_none() {
-            return None;
-        }
-        let value: Box<dyn Any> = match data_type.unwrap() {
+        let data_type = DataType::box_any_to_data_type(object)?;
+        let value: Box<dyn Any> = match data_type {
             DataType::INT => Box::new(*object.downcast_ref::<i32>().unwrap()),
             DataType::FLOAT => Box::new(*object.downcast_ref::<f64>().unwrap()),
             DataType::CHAR => Box::new(*object.downcast_ref::<char>().unwrap()),
@@ -55,11 +67,8 @@ impl DataType {
     }
 
     pub fn any_to_bool(object: &Box<dyn Any>) -> Option<&bool> {
-        let data_type = DataType::any_to_data_type(object);
-        if data_type.is_none() {
-            return None;
-        }
-        let data_type = data_type.unwrap();
+        let data_type = DataType::box_any_to_data_type(object)?;
+        let data_type = data_type;
         if data_type != DataType::BOOL {
             return None;
         }
@@ -68,7 +77,7 @@ impl DataType {
 
     pub fn is_are_operands_number<'a>(objects: &[&Box<dyn Any>]) -> Result<(), &'a str> {
         for object in objects.iter() {
-            match DataType::any_to_data_type(*object) {
+            match DataType::box_any_to_data_type(*object) {
                 Some(data_type) => {
                     if data_type != DataType::INT && data_type != DataType::FLOAT {
                         return Err("Operand must be a number.");
@@ -83,8 +92,8 @@ impl DataType {
     }
 
     pub fn is_equal<'a>(left: &Box<dyn Any>, right: &Box<dyn Any>) -> Result<bool, &'a str> {
-        let left_dt = DataType::any_to_data_type(left);
-        let right_dt = DataType::any_to_data_type(right);
+        let left_dt = DataType::box_any_to_data_type(left);
+        let right_dt = DataType::box_any_to_data_type(right);
         if left_dt.is_none() || right_dt.is_none() {
             return Err("Invalid operand data type.");
         }
@@ -98,14 +107,24 @@ impl DataType {
         return Ok(left_value == right_value);
     }
 
-    pub fn get_default_of_type(token_type: TokenType) -> Option<Box<dyn Any>> {
+    pub fn get_default_of_type(token_type: &TokenType) -> Option<Box<dyn Any>> {
         return match token_type {
             TokenType::RkwBool => Some(Box::new(false)),
             TokenType::RkwChar => Some(Box::new('\0')),
-            TokenType::RkwFloat => Some(Box::new(0.0 as f64)),
+            TokenType::RkwFloat => Some(Box::new(0.0)),
             TokenType::RkwInt => Some(Box::new(0)),
             _ => None,
         };
+    }
+
+    pub fn get_token_data_type(token: &Token) -> Option<DataType> {
+        match token.token_type {
+            TokenType::RkwBool => Some(DataType::BOOL),
+            TokenType::RkwChar => Some(DataType::CHAR),
+            TokenType::RkwFloat => Some(DataType::FLOAT),
+            TokenType::RkwInt => Some(DataType::INT),
+            _ => None,
+        }
     }
 }
 

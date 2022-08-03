@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::{data_type::DataType, environment, token::Token};
 
 use super::Expression;
@@ -16,5 +18,9 @@ impl Expression for Variable {
             Some(value) => Ok(value),
             None => Err("asdf"),
         };
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
