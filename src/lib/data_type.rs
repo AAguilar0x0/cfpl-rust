@@ -29,13 +29,13 @@ impl DataType {
     }
 
     pub fn box_any_to_data_type(object: &Box<dyn Any>) -> Option<DataType> {
-        return if object.is::<i32>() {
+        return if (*object).is::<i32>() {
             Some(DataType::INT)
-        } else if object.is::<f64>() {
+        } else if (*object).is::<f64>() {
             Some(DataType::FLOAT)
-        } else if object.is::<char>() {
+        } else if (*object).is::<char>() {
             Some(DataType::CHAR)
-        } else if object.is::<bool>() {
+        } else if (*object).is::<bool>() {
             Some(DataType::BOOL)
         } else {
             None
@@ -52,20 +52,6 @@ impl DataType {
             TokenType::LitInt => Some(Box::new(str.trim().parse::<i32>().unwrap())),
             TokenType::LitStr => Some(Box::new(str.to_owned())),
             _ => None,
-        };
-    }
-
-    pub fn any_to_data_type(object: &dyn Any) -> Option<DataType> {
-        return if object.is::<i32>() {
-            Some(DataType::INT)
-        } else if object.is::<f64>() {
-            Some(DataType::FLOAT)
-        } else if object.is::<char>() {
-            Some(DataType::CHAR)
-        } else if object.is::<bool>() {
-            Some(DataType::BOOL)
-        } else {
-            None
         };
     }
 

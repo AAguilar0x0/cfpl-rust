@@ -154,7 +154,7 @@ impl Parser<'_> {
                 _ => Err(&expression.operator),
             }
         } else if let Some(expression) = expression.as_any().downcast_ref::<Literal>() {
-            match DataType::any_to_data_type(&expression.value) {
+            match DataType::box_any_to_data_type(&expression.value) {
                 Some(data_type) if data_type == DataType::BOOL => Ok(()),
                 _ => Err(erroneous),
             }
@@ -247,7 +247,7 @@ impl Parser<'_> {
             if parser.compare_then_next(&[&TokenType::SymAssignment]) {
                 initializer = parser.expression()?;
                 if let Some(literal) = initializer.as_any().downcast_ref::<Literal>() {
-                    let value_data_type = DataType::any_to_data_type(&literal.value).unwrap();
+                    let value_data_type = DataType::box_any_to_data_type(&literal.value).unwrap();
                     if token_type.token_type == TokenType::RkwFloat
                         && value_data_type == DataType::INT
                     {
@@ -349,7 +349,7 @@ impl Parser<'_> {
                 let name = expression.name.to_owned();
                 let data_type = self.variable_type.get(&name.lexeme).unwrap().clone();
                 if let Some(value) = value.as_any().downcast_ref::<Literal>() {
-                    if DataType::any_to_data_type(value).unwrap() != data_type {
+                    if DataType::box_any_to_data_type(&value.value).unwrap() != data_type {
                         return Err(self.source_code.error_string_token(
                             &name,
                             &format!("Expected {:?} type.", data_type),
@@ -516,7 +516,7 @@ impl Parser<'_> {
 
     fn primary(&mut self) -> Result<Box<dyn Expression>, String> {
         self.next();
-        let previous_token = self.get_current();
+        let previous_token = self.get_previous().unwrap();
         return match previous_token.token_type {
             TokenType::LitBool
             | TokenType::LitChar
