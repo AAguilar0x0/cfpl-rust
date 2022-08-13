@@ -1,6 +1,7 @@
 pub mod data_type;
 pub mod environment;
 pub mod expression;
+pub mod interpreter;
 pub mod lexeme;
 pub mod lexer;
 pub mod parser;
@@ -10,6 +11,10 @@ pub mod token;
 pub mod token_type;
 use std::fs;
 use std::io::ErrorKind;
+
+use interpreter::interpreter;
+
+use crate::statement::display_statement;
 
 fn execute(source_code_string: String) {
     let cfpl_source_code = source_code::SourceCode {
@@ -47,6 +52,15 @@ fn execute(source_code_string: String) {
         Ok(result) => result,
         Err(error) => return print!("[Syntax-Analysis-Error]: {}", error),
     };
+
+    for statement in &statements {
+        println!("{}", display_statement(statement));
+    }
+
+    match interpreter(statements) {
+        Ok(_) => (),
+        Err(error) => return print!("[Interpreter-Error]: {}", error),
+    }
 }
 
 pub fn file(file_path: &str) {

@@ -6,7 +6,7 @@ use std::{
 use crate::data_type::DataType;
 
 pub struct Environment {
-    variables: HashMap<String, Box<dyn Any>>,
+    pub variables: HashMap<String, Box<dyn Any>>,
 }
 
 impl Environment {
@@ -19,7 +19,7 @@ impl Environment {
         if let Entry::Occupied(mut variables) = self.variables.entry(name) {
             variables.insert(value);
         } else {
-            return Err("Undefined variable '{name}'");
+            return Err("Undefined variable '{name}'.");
         }
         return Ok(());
     }
@@ -28,14 +28,14 @@ impl Environment {
         if let Some(value) = self.variables.get(name) {
             return Ok(value);
         } else {
-            return Err("Undefined variable '{name}'");
+            return Err("Undefined variable '{name}'.");
         }
     }
 
     pub fn data_type(&self, name: &str) -> Result<DataType, &'static str> {
         let object = self.variables.get(name);
         if object.is_none() {
-            return Err("Undefined variable '{name}'");
+            return Err("Undefined variable '{name}'.");
         }
         return Ok(DataType::box_any_to_data_type(object.unwrap()).unwrap());
     }

@@ -1,4 +1,4 @@
-use std::{any::Any, io::stdin, str::FromStr};
+use std::{any::Any, fmt::Display, io::stdin, str::FromStr};
 
 use crate::{data_type::DataType, environment::Environment, expression};
 
@@ -9,10 +9,10 @@ pub struct Input {
 }
 
 impl Statement for Input {
-    fn visit<'a>(&self, environment: &mut Environment) -> Result<(), &'a str> {
+    fn visit(&self, environment: &mut Environment) -> Result<(), String> {
         let mut buf = String::new();
         if stdin().read_line(&mut buf).is_err() {
-            return Err("Something went wrong while reading from stdin.");
+            return Err("Something went wrong while reading from stdin.".to_owned());
         }
         let data_type = environment.data_type(&self.variable.name.lexeme)?;
         let value = match data_type {
@@ -20,16 +20,26 @@ impl Statement for Input {
             DataType::FLOAT => handle_parse::<f64>(&buf),
             DataType::CHAR => handle_parse::<char>(&buf),
             DataType::BOOL => handle_parse::<bool>(&buf),
-            DataType::STR => return Err("Invalid STR data type"),
+            DataType::STR => return Err("Invalid STR data type.".to_owned()),
         }?;
         environment.assign(self.variable.name.lexeme.clone(), value)?;
         return Ok(());
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
-fn handle_parse<T: FromStr + 'static>(buf: &str) -> Result<Box<dyn Any>, &'static str> {
+fn handle_parse<T: FromStr + 'static>(buf: &str) -> Result<Box<dyn Any>, String> {
     match buf.trim().parse::<T>() {
         Ok(value) => Ok(Box::new(value)),
-        Err(_) => Err("Something went wrong while parsing from stdin."),
+        Err(_) => Err("Something went wrong while parsing from stdin.".to_owned()),
+    }
+}
+
+impl Display for Input {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Input({})", self.variable.to_string())
     }
 }

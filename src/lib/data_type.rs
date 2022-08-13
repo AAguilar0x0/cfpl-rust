@@ -12,7 +12,7 @@ pub enum DataType {
 }
 
 impl DataType {
-    pub fn stringify_primitives(object: &Box<dyn Any>) -> Result<String, &'static str> {
+    pub fn stringify_primitives(object: &Box<dyn Any>) -> Result<String, String> {
         let string = if let Some(output) = object.downcast_ref::<i32>() {
             output.to_string()
         } else if let Some(output) = object.downcast_ref::<f64>() {
@@ -22,21 +22,29 @@ impl DataType {
         } else if let Some(output) = object.downcast_ref::<bool>() {
             let output_str = output.to_string();
             output_str[0..1].to_uppercase() + &output_str[1..]
+        } else if let Some(output) = object.downcast_ref::<String>() {
+            output.clone()
         } else {
-            return Err("Invalid data type");
+            return Err("Invalid data type.".to_owned().to_owned());
         };
         return Ok(string);
     }
 
     pub fn box_any_to_data_type(object: &Box<dyn Any>) -> Option<DataType> {
-        return if (*object).is::<i32>() {
+        let mut object = object;
+        while let Some(value) = (*object).downcast_ref::<Box<dyn Any>>() {
+            object = value;
+        }
+        return if let Some(_) = (*object).downcast_ref::<i32>() {
             Some(DataType::INT)
-        } else if (*object).is::<f64>() {
+        } else if let Some(_) = (*object).downcast_ref::<f64>() {
             Some(DataType::FLOAT)
-        } else if (*object).is::<char>() {
+        } else if let Some(_) = (*object).downcast_ref::<char>() {
             Some(DataType::CHAR)
-        } else if (*object).is::<bool>() {
+        } else if let Some(_) = (*object).downcast_ref::<bool>() {
             Some(DataType::BOOL)
+        } else if let Some(_) = (*object).downcast_ref::<String>() {
+            Some(DataType::STR)
         } else {
             None
         };
@@ -57,12 +65,16 @@ impl DataType {
 
     pub fn clone_ref_any(object: &Box<dyn Any>) -> Option<Box<dyn Any>> {
         let data_type = DataType::box_any_to_data_type(object)?;
+        let mut object = object;
+        while let Some(value) = (*object).downcast_ref::<Box<dyn Any>>() {
+            object = value;
+        }
         let value: Box<dyn Any> = match data_type {
-            DataType::INT => Box::new(*object.downcast_ref::<i32>().unwrap()),
-            DataType::FLOAT => Box::new(*object.downcast_ref::<f64>().unwrap()),
-            DataType::CHAR => Box::new(*object.downcast_ref::<char>().unwrap()),
-            DataType::BOOL => Box::new(*object.downcast_ref::<bool>().unwrap()),
-            DataType::STR => Box::new(*object.downcast_ref::<&str>().to_owned().unwrap()),
+            DataType::INT => Box::new(*(*object).downcast_ref::<i32>().unwrap()),
+            DataType::FLOAT => Box::new(*(*object).downcast_ref::<f64>().unwrap()),
+            DataType::CHAR => Box::new(*(*object).downcast_ref::<char>().unwrap()),
+            DataType::BOOL => Box::new(*(*object).downcast_ref::<bool>().unwrap()),
+            DataType::STR => Box::new((*object).downcast_ref::<String>().unwrap().clone()),
         };
         return Some(value);
     }
@@ -76,32 +88,38 @@ impl DataType {
         return Some(object.downcast_ref::<bool>().unwrap());
     }
 
-    pub fn is_are_operands_number<'a>(objects: &[&Box<dyn Any>]) -> Result<(), &'a str> {
+    pub fn is_are_operands_number<'a>(objects: &[&Box<dyn Any>]) -> Result<(), String> {
         for object in objects.iter() {
             match DataType::box_any_to_data_type(*object) {
                 Some(data_type) => {
                     if data_type != DataType::INT && data_type != DataType::FLOAT {
-                        return Err("Operand must be a number.");
+                        return Err("Operand must be a number.".to_owned().to_owned());
                     }
                 }
                 None => {
-                    return Err("Invalid operand data type.");
+                    return Err("Invalid operand data type.".to_owned().to_owned());
                 }
             }
         }
         return Ok(());
     }
 
-    pub fn is_equal<'a>(left: &Box<dyn Any>, right: &Box<dyn Any>) -> Result<bool, &'a str> {
+    pub fn is_equal(left: &Box<dyn Any>, right: &Box<dyn Any>) -> Result<bool, String> {
         let left_dt = DataType::box_any_to_data_type(left);
         let right_dt = DataType::box_any_to_data_type(right);
         if left_dt.is_none() || right_dt.is_none() {
-            return Err("Invalid operand data type.");
+            return Err("Invalid operand data type.".to_owned().to_owned());
         }
         let left_dt = left_dt.unwrap();
         let right_dt = right_dt.unwrap();
-        if left_dt != DataType::BOOL && right_dt != DataType::BOOL {
-            return Err("Operand must be booleans.");
+        // if left_dt != DataType::BOOL && right_dt != DataType::BOOL {
+        //     return Err("Operand must be booleans.".to_owned());
+        // }
+        if left_dt != right_dt {
+            return Err(format!(
+                "Mismatched types of {:?} and {:?}",
+                left_dt, right_dt
+            ));
         }
         let left_value = left.downcast_ref::<bool>().unwrap();
         let right_value = right.downcast_ref::<bool>().unwrap();
@@ -176,31 +194,31 @@ mod test {
     #[test]
     fn stringify_primitives_excluded() {
         assert_eq!(
-            Err("Invalid data type"),
+            Err("Invalid data type.".to_owned()),
             DataType::stringify_primitives(&(Box::new("false") as Box<dyn Any>))
         );
         assert_eq!(
-            Err("Invalid data type"),
+            Err("Invalid data type.".to_owned()),
             DataType::stringify_primitives(&(Box::new(1 as i8) as Box<dyn Any>))
         );
         assert_eq!(
-            Err("Invalid data type"),
+            Err("Invalid data type.".to_owned()),
             DataType::stringify_primitives(&(Box::new(1 as i16) as Box<dyn Any>))
         );
         assert_eq!(
-            Err("Invalid data type"),
+            Err("Invalid data type.".to_owned()),
             DataType::stringify_primitives(&(Box::new(1 as i64) as Box<dyn Any>))
         );
         assert_eq!(
-            Err("Invalid data type"),
+            Err("Invalid data type.".to_owned()),
             DataType::stringify_primitives(&(Box::new(1 as i128) as Box<dyn Any>))
         );
         assert_eq!(
-            Err("Invalid data type"),
+            Err("Invalid data type.".to_owned()),
             DataType::stringify_primitives(&(Box::new(1 as f32) as Box<dyn Any>))
         );
         assert_eq!(
-            Err("Invalid data type"),
+            Err("Invalid data type.".to_owned()),
             DataType::stringify_primitives(&(Box::new(1.1 as f32) as Box<dyn Any>))
         );
     }

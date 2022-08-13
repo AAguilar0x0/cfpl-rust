@@ -1,4 +1,11 @@
-use crate::{environment::Environment, expression::Expression, statement::Statement, token::Token};
+use std::{any::Any, fmt::Display};
+
+use crate::{
+    environment::Environment,
+    expression::{display_expression, Expression},
+    statement::Statement,
+    token::Token,
+};
 
 pub struct If {
     pub token: Token,
@@ -8,7 +15,7 @@ pub struct If {
 }
 
 impl Statement for If {
-    fn visit<'a>(&self, environment: &mut Environment) -> Result<(), &'a str> {
+    fn visit(&self, environment: &mut Environment) -> Result<(), String> {
         let any_value = self.condition.visit(environment)?;
         if let Some(condition) = any_value.downcast_ref::<bool>() {
             if *condition {
@@ -17,8 +24,18 @@ impl Statement for If {
                 else_branch.visit(environment)?;
             }
         } else {
-            return Err("Invalid data type.");
+            return Err("Invalid data type.".to_owned());
         }
         return Ok(());
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Display for If {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "If({})", display_expression(&self.condition))
     }
 }

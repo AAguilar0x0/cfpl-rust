@@ -291,7 +291,7 @@ fn character_literal(
                     );
                     ellipse_character_literal
                 },
-                "Invalid character literal".to_string(),
+                "Invalid character literal.".to_string(),
             )
         } else {
             cfpl_source_code.error_string_manual(
@@ -303,7 +303,7 @@ fn character_literal(
                     ellipse_character_literal.push_str("...");
                     ellipse_character_literal
                 },
-                "Unclosed character literal".to_string(),
+                "Unclosed character literal.".to_string(),
             )
         }
     };

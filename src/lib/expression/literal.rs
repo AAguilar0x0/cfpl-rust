@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, fmt::Display};
 
 use crate::data_type::DataType;
 
@@ -9,14 +9,20 @@ pub struct Literal {
 }
 
 impl Expression for Literal {
-    fn visit<'a>(&self, _: &mut crate::environment::Environment) -> Result<Box<dyn Any>, &'a str> {
-        return match DataType::clone_ref_any(&self.value) {
+    fn visit(&self, _: &mut crate::environment::Environment) -> Result<Box<dyn Any>, String> {
+        return match DataType::clone_ref_any(&(self.value)) {
             Some(value) => Ok(value),
-            None => Err("Cannot clone value"),
+            None => Err("Cannot clone literal.".to_owned()),
         };
     }
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+impl Display for Literal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Literal({:?})", self.value)
     }
 }

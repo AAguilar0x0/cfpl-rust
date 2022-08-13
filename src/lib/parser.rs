@@ -85,7 +85,7 @@ impl Parser<'_> {
     fn compare_then_next(&mut self, types: &[&TokenType]) -> bool {
         let mut result = false;
         for current_type in types {
-            if self.compare_current(current_type) {
+            if self.compare_current(*current_type) {
                 self.next();
                 result = true;
                 break;
@@ -111,7 +111,7 @@ impl Parser<'_> {
         self.expect_then_next(&[token_type], message)?;
         self.expect_then_next(
             &[&TokenType::Eol],
-            &format!("Missing new line after \'{}\'", token_type),
+            &format!("Missing new line after \'{}\'.", token_type),
         )?;
         return Ok(());
     }
@@ -246,12 +246,12 @@ impl Parser<'_> {
             let mut initializer;
             if parser.compare_then_next(&[&TokenType::SymAssignment]) {
                 initializer = parser.expression()?;
-                if let Some(literal) = initializer.as_any().downcast_ref::<Literal>() {
+                if let Some(literal) = (*initializer).as_any().downcast_ref::<Literal>() {
                     let value_data_type = DataType::box_any_to_data_type(&literal.value).unwrap();
                     if token_type.token_type == TokenType::RkwFloat
                         && value_data_type == DataType::INT
                     {
-                        let value = *literal.as_any().downcast_ref::<i32>().unwrap();
+                        let value = *(*literal).as_any().downcast_ref::<i32>().unwrap();
                         initializer = Box::new(Literal {
                             value: Box::new(value),
                         });
@@ -265,7 +265,7 @@ impl Parser<'_> {
                 }
             } else {
                 initializer = Box::new(Literal {
-                    value: Box::new(DataType::get_default_of_type(&token_type.token_type)),
+                    value: Box::new(DataType::get_default_of_type(&token_type.token_type).unwrap()),
                 });
             }
 
@@ -291,6 +291,7 @@ impl Parser<'_> {
             ],
             expect_data_type_error,
         )?;
+        self.expect_then_next(&[&TokenType::Eol], "Expected new line after declaration.")?;
 
         if self.declaring {
             self.declaring = false;
@@ -310,15 +311,17 @@ impl Parser<'_> {
                 .source_code
                 .error_string_token(self.get_current(), "Statement is out of scope."));
         }
-        self.next();
-        let previous_token = self.get_previous().unwrap();
-        return match previous_token.token_type {
-            TokenType::RkwIf => self.if_stmt(),
-            TokenType::RkwOutput => self.output(),
-            TokenType::RkwInput => self.input(),
-            TokenType::RkwWhile => self.while_stmt(),
-            _ => self.expression_statement(),
-        };
+        if self.compare_then_next(&[&TokenType::RkwIf]) {
+            return self.if_stmt();
+        } else if self.compare_then_next(&[&TokenType::RkwOutput]) {
+            return self.output();
+        } else if self.compare_then_next(&[&TokenType::RkwInput]) {
+            return self.input();
+        } else if self.compare_then_next(&[&TokenType::RkwWhile]) {
+            return self.while_stmt();
+        }
+
+        return self.expression_statement();
     }
 
     fn expression_statement(&mut self) -> Result<Box<dyn Statement>, String> {
@@ -345,10 +348,10 @@ impl Parser<'_> {
         return if self.compare_then_next(&[&TokenType::SymAssignment]) {
             let equals = self.get_previous().unwrap().clone();
             let value = self.assignment()?;
-            if let Some(expression) = expression.as_ref().as_any().downcast_ref::<Var>() {
+            if let Some(expression) = (*expression).as_any().downcast_ref::<Variable>() {
                 let name = expression.name.to_owned();
                 let data_type = self.variable_type.get(&name.lexeme).unwrap().clone();
-                if let Some(value) = value.as_any().downcast_ref::<Literal>() {
+                if let Some(value) = (*value).as_any().downcast_ref::<Literal>() {
                     if DataType::box_any_to_data_type(&value.value).unwrap() != data_type {
                         return Err(self.source_code.error_string_token(
                             &name,
@@ -530,7 +533,7 @@ impl Parser<'_> {
                 } else {
                     Err(self
                         .source_code
-                        .error_string_token(previous_token, "Expected a literal value"))
+                        .error_string_token(previous_token, "Expected a literal value."))
                 }
             }
             TokenType::Identifier => {
@@ -627,8 +630,8 @@ impl Parser<'_> {
             "Expected '(' after 'WHILE.",
         )?;
         let condition = self.expression()?;
-        self.expect_then_next(
-            &[&TokenType::SymRightParenthesis],
+        self.expect_token_and_eol_next(
+            &TokenType::SymRightParenthesis,
             "Expected ')' after condition.",
         )?;
         self.expect_token_and_eol(&TokenType::RkwStart, "Expected 'START' before code block.")?;
@@ -663,9 +666,12 @@ impl Parser<'_> {
         while !self.compare_current(&TokenType::RkwStop) && !self.is_at_end() {
             statements.push(self.declaration()?);
         }
-        self.expect_token_and_eol(&TokenType::RkwStop, "Expected 'STOP' after code block.")?;
-        if is_scope {
-            self.in_scope = false;
+        self.expect_then_next(&[&TokenType::RkwStop], "Expected 'STOP' after code block.")?;
+        if !self.is_at_end() {
+            self.expect_then_next(&[&TokenType::Eol], "Missing new line after 'STOP'.")?;
+            if is_scope {
+                self.in_scope = false;
+            }
         }
 
         return Ok(Box::new(Block { statements }));
