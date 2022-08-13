@@ -9,5 +9,5 @@ pub fn interpreter(statements: Vec<Box<dyn Statement>>) -> Result<(), String> {
     for statement in statements {
         statement.visit(&mut environment)?;
     }
-    todo!()
+    return Ok(());
 }

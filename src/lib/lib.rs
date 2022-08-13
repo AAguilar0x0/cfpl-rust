@@ -9,12 +9,9 @@ pub mod source_code;
 pub mod statement;
 pub mod token;
 pub mod token_type;
+use interpreter::interpreter;
 use std::fs;
 use std::io::ErrorKind;
-
-use interpreter::interpreter;
-
-use crate::statement::display_statement;
 
 fn execute(source_code_string: String) {
     let cfpl_source_code = source_code::SourceCode {
@@ -53,9 +50,11 @@ fn execute(source_code_string: String) {
         Err(error) => return print!("[Syntax-Analysis-Error]: {}", error),
     };
 
-    for statement in &statements {
-        println!("{}", display_statement(statement));
-    }
+    // Debugging purposes
+
+    // for statement in &statements {
+    //     println!("{}", crate::statement::display_statement(statement));
+    // }
 
     match interpreter(statements) {
         Ok(_) => (),

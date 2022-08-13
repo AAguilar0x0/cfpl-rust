@@ -228,7 +228,7 @@ impl Expression for Binary {
                 if left_dt == DataType::INT && right_dt == DataType::INT {
                     let left_value = left_value.downcast_ref::<i32>().unwrap();
                     let right_value = right_value.downcast_ref::<i32>().unwrap();
-                    return Ok(Box::new(left_value & right_value));
+                    return Ok(Box::new(left_value % right_value));
                 } else {
                     return Err("Operand must be a number.".to_owned());
                 }
@@ -236,7 +236,7 @@ impl Expression for Binary {
             TokenType::SymAmpersand => {
                 return Ok(Box::new(
                     DataType::stringify_primitives(&self.left.visit(environment)?)?
-                        + &DataType::stringify_primitives(&self.left.visit(environment)?)?,
+                        + &DataType::stringify_primitives(&self.right.visit(environment)?)?,
                 ));
             }
             _ => return Err("Invalid unary operator.".to_owned()),

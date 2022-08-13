@@ -20,8 +20,7 @@ impl DataType {
         } else if let Some(output) = object.downcast_ref::<char>() {
             output.to_string()
         } else if let Some(output) = object.downcast_ref::<bool>() {
-            let output_str = output.to_string();
-            output_str[0..1].to_uppercase() + &output_str[1..]
+            output.to_string().to_uppercase()
         } else if let Some(output) = object.downcast_ref::<String>() {
             output.clone()
         } else {
@@ -121,9 +120,33 @@ impl DataType {
                 left_dt, right_dt
             ));
         }
-        let left_value = left.downcast_ref::<bool>().unwrap();
-        let right_value = right.downcast_ref::<bool>().unwrap();
-        return Ok(left_value == right_value);
+        return match left_dt {
+            DataType::INT => {
+                let left_value = *left.downcast_ref::<i32>().unwrap();
+                let right_value = *right.downcast_ref::<i32>().unwrap();
+                Ok(left_value == right_value)
+            }
+            DataType::FLOAT => {
+                let left_value = *left.downcast_ref::<f64>().unwrap();
+                let right_value = *right.downcast_ref::<f64>().unwrap();
+                Ok(left_value == right_value)
+            }
+            DataType::CHAR => {
+                let left_value = *left.downcast_ref::<char>().unwrap();
+                let right_value = *right.downcast_ref::<char>().unwrap();
+                Ok(left_value == right_value)
+            }
+            DataType::BOOL => {
+                let left_value = *left.downcast_ref::<bool>().unwrap();
+                let right_value = *right.downcast_ref::<bool>().unwrap();
+                Ok(left_value == right_value)
+            }
+            DataType::STR => {
+                let left_value = left.downcast_ref::<String>().unwrap();
+                let right_value = right.downcast_ref::<String>().unwrap();
+                Ok(left_value == right_value)
+            }
+        };
     }
 
     pub fn get_default_of_type(token_type: &TokenType) -> Option<Box<dyn Any>> {
