@@ -1,13 +1,13 @@
 use std::any::Any;
 
-use crate::{data_type::DataType, token::Token, token_type::TokenType};
+use crate::{data_type::DataType, token::Token};
 
 use super::Expression;
 
 pub struct Assign {
     pub name: Token,
     pub value: Box<dyn Expression>,
-    pub token_type: TokenType,
+    pub data_type: DataType,
 }
 
 impl Expression for Assign {
@@ -20,7 +20,7 @@ impl Expression for Assign {
         if data_type.is_none() {
             return Err("Expected expression value as '{token_type}'");
         }
-        if self.token_type == TokenType::RkwFloat && data_type.unwrap() == DataType::INT {
+        if self.data_type == DataType::FLOAT && data_type.unwrap() == DataType::INT {
             value = Box::new(f64::from(*value.downcast_ref::<i32>().unwrap()));
         }
         let return_value = DataType::clone_ref_any(&value);

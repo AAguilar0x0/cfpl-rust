@@ -1,9 +1,9 @@
-use crate::environment::Environment;
+use crate::{environment::Environment, expression};
 
 use super::Statement;
 
-struct Expression {
-    statement: dyn Statement,
+pub struct Expression {
+    pub statement: Box<dyn expression::Expression>,
 }
 
 impl Statement for Expression {

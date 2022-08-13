@@ -20,6 +20,7 @@ impl Statement for Input {
             DataType::FLOAT => handle_parse::<f64>(&buf),
             DataType::CHAR => handle_parse::<char>(&buf),
             DataType::BOOL => handle_parse::<bool>(&buf),
+            DataType::STR => return Err("Invalid STR data type"),
         }?;
         environment.assign(self.variable.name.lexeme.clone(), value)?;
         return Ok(());

@@ -1,7 +1,7 @@
 use cfpl::{self, statement::Statement};
 
 fn main() {
-    // cfpl::file("./test_source_codes/0.cfpl");
+    cfpl::file("./test_source_codes/0.cfpl");
 
     // let x = cfpl::statement::print::Print {
     //     expression: Box::new(cfpl::expression::variable::Variable {

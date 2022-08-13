@@ -6,6 +6,7 @@ pub mod if_stmt;
 pub mod input;
 pub mod print;
 pub mod var;
+pub mod var_dec;
 pub mod while_stmt;
 
 pub trait Statement {

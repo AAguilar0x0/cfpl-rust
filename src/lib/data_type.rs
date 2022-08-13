@@ -2,12 +2,13 @@ use std::any::Any;
 
 use crate::{token::Token, token_type::TokenType};
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum DataType {
     INT,
     FLOAT,
     CHAR,
     BOOL,
+    STR,
 }
 
 impl DataType {
@@ -41,6 +42,19 @@ impl DataType {
         };
     }
 
+    pub fn str_to_data_type(str: &str, data_type: &TokenType) -> Option<Box<dyn Any>> {
+        return match data_type {
+            TokenType::LitBool => {
+                Some(Box::new(str.trim().to_lowercase().parse::<bool>().unwrap()))
+            }
+            TokenType::LitChar => Some(Box::new(str.trim().parse::<char>().unwrap())),
+            TokenType::LitFloat => Some(Box::new(str.trim().parse::<f64>().unwrap())),
+            TokenType::LitInt => Some(Box::new(str.trim().parse::<i32>().unwrap())),
+            TokenType::LitStr => Some(Box::new(str.to_owned())),
+            _ => None,
+        };
+    }
+
     pub fn any_to_data_type(object: &dyn Any) -> Option<DataType> {
         return if object.is::<i32>() {
             Some(DataType::INT)
@@ -62,6 +76,7 @@ impl DataType {
             DataType::FLOAT => Box::new(*object.downcast_ref::<f64>().unwrap()),
             DataType::CHAR => Box::new(*object.downcast_ref::<char>().unwrap()),
             DataType::BOOL => Box::new(*object.downcast_ref::<bool>().unwrap()),
+            DataType::STR => Box::new(*object.downcast_ref::<&str>().to_owned().unwrap()),
         };
         return Some(value);
     }
