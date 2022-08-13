@@ -5,7 +5,7 @@ use crate::{data_type::DataType, environment::Environment, expression};
 use super::Statement;
 
 pub struct Input {
-    variable: expression::variable::Variable,
+    pub variable: expression::variable::Variable,
 }
 
 impl Statement for Input {

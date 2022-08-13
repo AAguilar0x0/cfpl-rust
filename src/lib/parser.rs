@@ -7,7 +7,10 @@ use crate::{
         unary::Unary, variable::Variable, Expression,
     },
     source_code,
-    statement::{self, var::Var, var_dec::VarDec, Statement},
+    statement::{
+        self, block::Block, if_stmt::If, input::Input, print::Print, var::Var, var_dec::VarDec,
+        while_stmt::While, Statement,
+    },
     token::{self, Token},
     token_type::TokenType,
 };
@@ -113,9 +116,13 @@ impl Parser<'_> {
         return Ok(());
     }
 
-    fn expect_token_and_eol(&mut self, token_type: TokenType, message: &str) -> Result<(), String> {
+    fn expect_token_and_eol(
+        &mut self,
+        token_type: &TokenType,
+        message: &str,
+    ) -> Result<(), String> {
         let temp_current_index = self.current_index;
-        self.expect_token_and_eol_next(&token_type, message)?;
+        self.expect_token_and_eol_next(token_type, message)?;
         self.current_index = temp_current_index;
         return Ok(());
     }
@@ -295,7 +302,23 @@ impl Parser<'_> {
     }
 
     fn statement(&mut self) -> Result<Box<dyn Statement>, String> {
-        return self.expression_statement();
+        if self.compare_then_next(&[&TokenType::RkwStart]) {
+            return self.block();
+        }
+        if !self.in_scope {
+            return Err(self
+                .source_code
+                .error_string_token(self.get_current(), "Statement is out of scope."));
+        }
+        self.next();
+        let previous_token = self.get_previous().unwrap();
+        return match previous_token.token_type {
+            TokenType::RkwIf => self.if_stmt(),
+            TokenType::RkwOutput => self.output(),
+            TokenType::RkwInput => self.input(),
+            TokenType::RkwWhile => self.while_stmt(),
+            _ => self.expression_statement(),
+        };
     }
 
     fn expression_statement(&mut self) -> Result<Box<dyn Statement>, String> {
@@ -492,43 +515,39 @@ impl Parser<'_> {
     }
 
     fn primary(&mut self) -> Result<Box<dyn Expression>, String> {
-        let current_token = self.get_current();
-        return match current_token.token_type {
+        self.next();
+        let previous_token = self.get_current();
+        return match previous_token.token_type {
             TokenType::LitBool
             | TokenType::LitChar
             | TokenType::LitFloat
             | TokenType::LitInt
             | TokenType::LitStr => {
                 let value =
-                    DataType::str_to_data_type(&current_token.lexeme, &current_token.token_type);
-                let expression: Result<Box<dyn Expression>, String> = if let Some(value) = value {
+                    DataType::str_to_data_type(&previous_token.lexeme, &previous_token.token_type);
+                if let Some(value) = value {
                     Ok(Box::new(Literal { value }))
                 } else {
                     Err(self
                         .source_code
-                        .error_string_token(current_token, "Expected a literal value"))
-                };
-                self.next();
-                expression
+                        .error_string_token(previous_token, "Expected a literal value"))
+                }
             }
             TokenType::Identifier => {
-                let expression: Result<Box<dyn Expression>, String> = if !self.var_declarations
-                    && !self.variable_type.contains_key(&current_token.lexeme)
+                if !self.var_declarations
+                    && !self.variable_type.contains_key(&previous_token.lexeme)
                 {
                     Err(self.source_code.error_string_token(
-                        current_token,
-                        &format!("Undefined variable {}.", current_token.lexeme),
+                        previous_token,
+                        &format!("Undefined variable {}.", previous_token.lexeme),
                     ))
                 } else {
                     Ok(Box::new(Variable {
-                        name: current_token.clone(),
+                        name: previous_token.clone(),
                     }))
-                };
-                self.next();
-                expression
+                }
             }
             TokenType::SymLeftParenthesis => {
-                self.next();
                 let expression = self.expression()?;
                 self.expect_then_next(
                     &[&TokenType::SymRightParenthesis],
@@ -540,9 +559,115 @@ impl Parser<'_> {
                 let error_string = self
                     .source_code
                     .error_string_token(self.get_current(), "Expected expression.");
-                self.next();
                 Err(error_string)
             }
         };
+    }
+
+    fn if_stmt(&mut self) -> Result<Box<dyn Statement>, String> {
+        let if_token = self.get_previous().unwrap().clone();
+        self.expect_then_next(
+            &[&TokenType::SymLeftParenthesis],
+            "Expected '(' after 'if'.",
+        )?;
+        let condition = self.expression()?;
+        self.expect_token_and_eol_next(
+            &TokenType::SymRightParenthesis,
+            "Expected ')' after condition.",
+        )?;
+        self.expect_token_and_eol(&TokenType::RkwStart, "Expected 'START' before code block.")?;
+        self.in_control_structure = true;
+        let then_branch = self.statement()?;
+        let else_branch = if self.compare_then_next(&[&TokenType::RkwElse]) {
+            self.expect_then_next(&[&TokenType::Eol], "Expected new line after 'ELSE'.")?;
+            self.expect_token_and_eol(&TokenType::RkwStart, "Expected 'START' before code block.")?;
+            self.in_control_structure = true;
+            Some(self.statement()?)
+        } else {
+            None
+        };
+
+        return Ok(Box::new(If {
+            token: if_token,
+            condition,
+            then_branch,
+            else_branch,
+        }));
+    }
+
+    fn output(&mut self) -> Result<Box<dyn Statement>, String> {
+        self.expect_then_next(&[&TokenType::SymColon], "Expected ':' after 'OUTPUT'.")?;
+        let expression = self.expression()?;
+        self.expect_then_next(&[&TokenType::Eol], "Expected new line after expression.")?;
+
+        return Ok(Box::new(Print { expression }));
+    }
+
+    fn input(&mut self) -> Result<Box<dyn Statement>, String> {
+        self.expect_then_next(&[&TokenType::SymColon], "Expected ':' after 'INPUT'.")?;
+        let name = self
+            .expect_then_next(
+                &[&TokenType::Identifier],
+                "Expected a variable name to receive the input.",
+            )?
+            .clone();
+        self.expect_then_next(
+            &[&TokenType::Eol],
+            "Expected only one variable to receive the input.",
+        )?;
+
+        let variable = Variable { name };
+
+        return Ok(Box::new(Input { variable }));
+    }
+
+    fn while_stmt(&mut self) -> Result<Box<dyn Statement>, String> {
+        self.expect_then_next(
+            &[&TokenType::SymLeftParenthesis],
+            "Expected '(' after 'WHILE.",
+        )?;
+        let condition = self.expression()?;
+        self.expect_then_next(
+            &[&TokenType::SymRightParenthesis],
+            "Expected ')' after condition.",
+        )?;
+        self.expect_token_and_eol(&TokenType::RkwStart, "Expected 'START' before code block.")?;
+        self.in_control_structure = true;
+        let body = self.statement()?;
+
+        return Ok(Box::new(While { condition, body }));
+    }
+
+    fn block(&mut self) -> Result<Box<dyn Statement>, String> {
+        if self.in_scope && !self.in_control_structure {
+            return Err(self
+                .source_code
+                .error_string_token(self.get_previous().unwrap(), "Nested scope in invalid."));
+        }
+        if !self.in_scope && self.scope_counter > 0 {
+            return Err(self
+                .source_code
+                .error_string_token(self.get_previous().unwrap(), "Multiple scope in invalid."));
+        }
+        let mut is_scope = false;
+        if self.var_declarations && !self.in_scope {
+            is_scope = true;
+            self.in_scope = true;
+            self.scope_counter += 1;
+            self.var_declarations = false;
+        }
+
+        let mut statements = vec![];
+        self.expect_then_next(&[&TokenType::Eol], "Missing new line after 'START'.")?;
+        self.in_control_structure = false;
+        while !self.compare_current(&TokenType::RkwStop) && !self.is_at_end() {
+            statements.push(self.declaration()?);
+        }
+        self.expect_token_and_eol(&TokenType::RkwStop, "Expected 'STOP' after code block.")?;
+        if is_scope {
+            self.in_scope = false;
+        }
+
+        return Ok(Box::new(Block { statements }));
     }
 }

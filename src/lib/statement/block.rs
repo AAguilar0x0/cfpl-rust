@@ -2,8 +2,8 @@ use crate::environment::Environment;
 
 use super::Statement;
 
-struct Block {
-    statements: Vec<Box<dyn Statement>>,
+pub struct Block {
+    pub statements: Vec<Box<dyn Statement>>,
 }
 
 impl Statement for Block {

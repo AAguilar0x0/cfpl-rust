@@ -3,8 +3,8 @@ use crate::{data_type::DataType, expression::Expression};
 use super::Statement;
 
 pub struct While {
-    condition: Box<dyn Expression>,
-    body: Box<dyn Statement>,
+    pub condition: Box<dyn Expression>,
+    pub body: Box<dyn Statement>,
 }
 
 impl Statement for While {
