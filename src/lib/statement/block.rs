@@ -25,11 +25,11 @@ impl Display for Block {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = "Block(\n".to_owned();
         for statement in &self.statements {
-            result.push_str("\t");
-            result.push_str(&display_statement(&statement));
-            result.push_str("\n");
+            result.push('\t');
+            result.push_str(&display_statement(statement));
+            result.push('\n');
         }
-        result.push_str(")");
+        result.push(')');
         write!(f, "{}", result)
     }
 }

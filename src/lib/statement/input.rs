@@ -40,6 +40,6 @@ fn handle_parse<T: FromStr + 'static>(buf: &str) -> Result<Box<dyn Any>, String>
 
 impl Display for Input {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Input({})", self.variable.to_string())
+        write!(f, "Input({})", self.variable)
     }
 }

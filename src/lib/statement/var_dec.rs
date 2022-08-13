@@ -25,11 +25,11 @@ impl Display for VarDec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = "VarDec(\n".to_owned();
         for variable in &self.variable_declarations {
-            result.push_str("\t");
+            result.push('\t');
             result.push_str(&variable.to_string());
-            result.push_str("\n");
+            result.push('\n');
         }
-        result.push_str(")");
+        result.push(')');
         write!(f, "{}", result)
     }
 }

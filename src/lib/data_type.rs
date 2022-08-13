@@ -24,7 +24,7 @@ impl DataType {
         } else if let Some(output) = object.downcast_ref::<String>() {
             output.clone()
         } else {
-            return Err("Invalid data type.".to_owned().to_owned());
+            return Err("Invalid data type.".to_owned());
         };
         return Ok(string);
     }
@@ -34,15 +34,15 @@ impl DataType {
         while let Some(value) = (*object).downcast_ref::<Box<dyn Any>>() {
             object = value;
         }
-        return if let Some(_) = (*object).downcast_ref::<i32>() {
+        return if (*object).downcast_ref::<i32>().is_some() {
             Some(DataType::INT)
-        } else if let Some(_) = (*object).downcast_ref::<f64>() {
+        } else if (*object).downcast_ref::<f64>().is_some() {
             Some(DataType::FLOAT)
-        } else if let Some(_) = (*object).downcast_ref::<char>() {
+        } else if (*object).downcast_ref::<char>().is_some() {
             Some(DataType::CHAR)
-        } else if let Some(_) = (*object).downcast_ref::<bool>() {
+        } else if (*object).downcast_ref::<bool>().is_some() {
             Some(DataType::BOOL)
-        } else if let Some(_) = (*object).downcast_ref::<String>() {
+        } else if (*object).downcast_ref::<String>().is_some() {
             Some(DataType::STR)
         } else {
             None
@@ -87,16 +87,16 @@ impl DataType {
         return Some(object.downcast_ref::<bool>().unwrap());
     }
 
-    pub fn is_are_operands_number<'a>(objects: &[&Box<dyn Any>]) -> Result<(), String> {
+    pub fn is_are_operands_number(objects: &[&Box<dyn Any>]) -> Result<(), String> {
         for object in objects.iter() {
             match DataType::box_any_to_data_type(*object) {
                 Some(data_type) => {
                     if data_type != DataType::INT && data_type != DataType::FLOAT {
-                        return Err("Operand must be a number.".to_owned().to_owned());
+                        return Err("Operand must be a number.".to_owned());
                     }
                 }
                 None => {
-                    return Err("Invalid operand data type.".to_owned().to_owned());
+                    return Err("Invalid operand data type.".to_owned());
                 }
             }
         }
@@ -107,7 +107,7 @@ impl DataType {
         let left_dt = DataType::box_any_to_data_type(left);
         let right_dt = DataType::box_any_to_data_type(right);
         if left_dt.is_none() || right_dt.is_none() {
-            return Err("Invalid operand data type.".to_owned().to_owned());
+            return Err("Invalid operand data type.".to_owned());
         }
         let left_dt = left_dt.unwrap();
         let right_dt = right_dt.unwrap();
