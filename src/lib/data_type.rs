@@ -201,7 +201,7 @@ mod test {
     #[test]
     fn stringify_primitives_bool_true() {
         assert_eq!(
-            Ok(String::from("True")),
+            Ok(String::from("TRUE")),
             DataType::stringify_primitives(&(Box::new(true) as Box<dyn Any>))
         );
     }
@@ -209,7 +209,7 @@ mod test {
     #[test]
     fn stringify_primitives_bool_false() {
         assert_eq!(
-            Ok(String::from("False")),
+            Ok(String::from("FALSE")),
             DataType::stringify_primitives(&(Box::new(false) as Box<dyn Any>))
         );
     }
