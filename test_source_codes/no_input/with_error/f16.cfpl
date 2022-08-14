@@ -1,0 +1,7 @@
+* [Parser-Error] Expected valid variable name but got reserved keyword.
+* [line: 1, column: 4] on ELSE 'ELSE'.
+* VAR ELSE AS INT
+*    ^
+VAR ELSE AS INT
+START 
+STOP

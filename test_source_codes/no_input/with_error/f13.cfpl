@@ -1,0 +1,10 @@
+* [Parser-Error] Missing new line after 'STOP'
+* [line: 4, column: 40] on MULTIPLICATION '*'.
+* STOP * asdf
+*                                        ^
+*OUTPUT: (8>5 AND (7<>7 AND 4>2 ))
+START
+*OUTPUT: (8>5 AND (7<>7 AND 4>2 ))
+STOP * asdf
+*OUTPUT: (8>5 AND (7<>7 AND 4>2 ))
+ 

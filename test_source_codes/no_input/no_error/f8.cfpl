@@ -1,3 +1,6 @@
+* 9
+* hi9
+* n&FALSE
 VAR xyz=6, b=1 AS INT
 VAR w_23='m' AS CHAR
 VAR t="TRUE" AS BOOL

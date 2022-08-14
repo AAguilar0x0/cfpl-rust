@@ -1,0 +1,7 @@
+* [Parser-Error] Misplaced variable declaration.
+* [line: 3, column: 1] on VAR 'VAR'.
+* VAR t,p AS CHAR
+* ^ 
+START
+STOP
+VAR t,p AS CHAR

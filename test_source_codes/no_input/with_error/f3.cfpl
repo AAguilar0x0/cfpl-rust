@@ -1,0 +1,8 @@
+* [Parser-Error] Misplaced variable declaration.
+* [line: 3, column: 1] on VAR 'VAR'.
+* VAR b as BOOL
+* ^ 
+VAR n AS FLOAT
+START
+VAR b as BOOL
+STOP

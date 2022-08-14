@@ -116,7 +116,8 @@ mod test {
             assert!(path.is_ok());
             let path = path.unwrap();
             println!("Test Filename: {}", path.file_name().to_str().unwrap());
-            assert!(!file(path.path().to_str().unwrap()))
+            assert!(!file(path.path().to_str().unwrap()));
+            println!();
         }
     }
 }

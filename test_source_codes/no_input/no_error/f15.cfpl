@@ -1,3 +1,4 @@
+* FALSE
 VAR res AS BOOL
 START
 res="TRUE" 

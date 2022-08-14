@@ -1,3 +1,4 @@
+* 21
 VAR v AS INT
 START
 v = (6 + 3 * 6 - 9/3)

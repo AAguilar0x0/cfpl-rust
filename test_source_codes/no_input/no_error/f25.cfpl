@@ -1,3 +1,4 @@
+* 3
 VAR a=1, b=0 AS INT
 START
 	IF(7>5)
