@@ -21,7 +21,7 @@ fn execute(source_code_string: String) -> bool {
     let tokens = match lexer::lexical_analysis(&cfpl_source_code) {
         Ok(result) => result,
         Err(error) => {
-            print!("[Lexical-Analysis-Error]: {}", error);
+            eprint!("[Lexical-Analysis-Error]: {}", error);
             return false;
         }
     };
@@ -51,7 +51,7 @@ fn execute(source_code_string: String) -> bool {
     let statements = match parser::Parser::syntax_analysis(&cfpl_source_code, &tokens) {
         Ok(result) => result,
         Err(error) => {
-            print!("[Syntax-Analysis-Error]: {}", error);
+            eprint!("[Syntax-Analysis-Error]: {}", error);
             return false;
         }
     };
@@ -65,7 +65,7 @@ fn execute(source_code_string: String) -> bool {
     match interpreter(statements) {
         Ok(_) => (),
         Err(error) => {
-            print!("[Interpreter-Error]: {}", error);
+            eprint!("[Interpreter-Error]: {}", error);
             return false;
         }
     };
@@ -78,11 +78,11 @@ pub fn file(file_path: &str) -> bool {
         Ok(result) => result,
         Err(error) => match error.kind() {
             ErrorKind::NotFound => {
-                print!("File not found: {file_path}");
+                eprint!("File not found: {file_path}");
                 return false;
             }
             _ => {
-                print!("Error opening the file: {file_path}");
+                eprint!("Error opening the file: {file_path}");
                 return false;
             }
         },
@@ -94,30 +94,28 @@ mod test {
     use super::*;
     use std::fs;
 
-    #[test]
-    fn integration_no_input_no_error() {
-        let paths = fs::read_dir("./test_source_codes/no_input/no_error/");
+    fn integration_no_input(path: &str, should_true: bool) {
+        let paths = fs::read_dir(path);
         assert!(paths.is_ok());
         let paths = paths.unwrap();
         for path in paths {
             assert!(path.is_ok());
             let path = path.unwrap();
-            println!("Test Filename: {}", path.file_name().to_str().unwrap());
-            assert!(file(path.path().to_str().unwrap()))
+            let path = path.path().to_str().unwrap().to_owned();
+            println!("Test file full path: {}", &path);
+            let result = file(&path);
+            assert!(if should_true { result } else { !result });
+            println!();
         }
     }
 
     #[test]
+    fn integration_no_input_no_error() {
+        integration_no_input("./test_source_codes/no_input/no_error/", true);
+    }
+
+    #[test]
     fn integration_no_input_with_error() {
-        let paths = fs::read_dir("./test_source_codes/no_input/with_error/");
-        assert!(paths.is_ok());
-        let paths = paths.unwrap();
-        for path in paths {
-            assert!(path.is_ok());
-            let path = path.unwrap();
-            println!("Test Filename: {}", path.file_name().to_str().unwrap());
-            assert!(!file(path.path().to_str().unwrap()));
-            println!();
-        }
+        integration_no_input("./test_source_codes/no_input/with_error/", false);
     }
 }
