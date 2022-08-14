@@ -2,7 +2,7 @@ use std::any::Any;
 
 use crate::{token::Token, token_type::TokenType};
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum DataType {
     INT,
     FLOAT,
@@ -169,7 +169,7 @@ impl DataType {
         }
     }
 
-    pub fn downcast_box_any<'a, T: 'static>(box_any: &'a Box<dyn Any>) -> Option<&'a T> {
+    pub fn downcast_box_any<T: 'static>(box_any: &Box<dyn Any>) -> Option<&T> {
         let mut object = box_any;
         while let Some(value) = (*object).downcast_ref::<Box<dyn Any>>() {
             object = value;

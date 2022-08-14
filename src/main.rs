@@ -1,6 +1,6 @@
 use std::{env, path::Path};
 
-const HELP_MESSAGE: &'static str = "Usage: cfpl <type> <type parameter>
+const HELP_MESSAGE: &str = "Usage: cfpl <type> <type parameter>
                                     \n\ttype:
                                     \n\t   --file or -f
                                     \n\t   type parameter:
@@ -10,8 +10,13 @@ const HELP_MESSAGE: &'static str = "Usage: cfpl <type> <type parameter>
                                     \n\t      <string source code> (i.e. \"VAR ab as INT\\nSTART\\nOUTPUT: ab\\nSTOP\")
                                     ";
 
+enum ArgumentType {
+    String,
+    File,
+}
+
 struct Config<'a> {
-    argument_type: &'a str,
+    argument_type: ArgumentType,
     argument_type_parameter: &'a str,
 }
 
@@ -21,19 +26,22 @@ impl Config<'_> {
             return Err(HELP_MESSAGE.to_owned());
         }
 
-        let config = Config {
-            argument_type: &argument[1],
+        let mut config = Config {
+            argument_type: ArgumentType::File,
             argument_type_parameter: &argument[2],
         };
 
-        return match config.argument_type {
+        return match argument[1].as_str() {
             "--file" | "-f" => {
                 if let Some(extension) = Path::new(config.argument_type_parameter)
                     .extension()
                     .and_then(|extension| extension.to_str())
                 {
                     match extension {
-                        "cfpl" | "txt" => Ok(config),
+                        "cfpl" | "txt" => {
+                            config.argument_type = ArgumentType::File;
+                            Ok(config)
+                        }
                         _ => Err(format!(
                             "Invalid file extension {}\n{}",
                             extension, HELP_MESSAGE
@@ -43,10 +51,13 @@ impl Config<'_> {
                     Err(format!("Unidentified file\n{}", HELP_MESSAGE))
                 }
             }
-            "--string" | "-s" => Ok(config),
+            "--string" | "-s" => {
+                config.argument_type = ArgumentType::String;
+                Ok(config)
+            }
             _ => Err(format!(
                 "Invalid argument type: {}\n{}",
-                config.argument_type, HELP_MESSAGE
+                argument[1], HELP_MESSAGE
             )),
         };
     }
@@ -57,7 +68,10 @@ fn main() {
 
     let config = Config::new(&args);
     let is_success = match config {
-        Ok(config) => cfpl::file(config.argument_type_parameter),
+        Ok(config) => match config.argument_type {
+            ArgumentType::File => cfpl::file(config.argument_type_parameter),
+            ArgumentType::String => cfpl::execute(config.argument_type_parameter.to_owned()),
+        },
         Err(error) => {
             eprint!("{}", error);
             false

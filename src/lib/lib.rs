@@ -13,7 +13,7 @@ use interpreter::interpreter;
 use std::fs;
 use std::io::ErrorKind;
 
-fn execute(source_code_string: String) -> bool {
+pub fn execute(source_code_string: String) -> bool {
     let cfpl_source_code = source_code::SourceCode {
         vec: source_code_string.chars().collect(),
         source_code: source_code_string,
