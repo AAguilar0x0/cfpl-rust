@@ -251,7 +251,7 @@ impl Parser<'_> {
                     if token_type.token_type == TokenType::RkwFloat
                         && value_data_type == DataType::INT
                     {
-                        let value = *(*literal).as_any().downcast_ref::<i32>().unwrap();
+                        let value = *DataType::downcast_box_any::<i32>(&literal.value).unwrap();
                         initializer = Box::new(Literal {
                             value: Box::new(value),
                         });

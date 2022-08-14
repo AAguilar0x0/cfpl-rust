@@ -168,6 +168,15 @@ impl DataType {
             _ => None,
         }
     }
+
+    pub fn downcast_box_any<'a, T: 'static>(box_any: &'a Box<dyn Any>) -> Option<&'a T> {
+        let mut object = box_any;
+        while let Some(value) = (*object).downcast_ref::<Box<dyn Any>>() {
+            object = value;
+        }
+
+        return (*object).downcast_ref::<T>();
+    }
 }
 
 #[cfg(test)]
