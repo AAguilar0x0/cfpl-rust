@@ -5,6 +5,7 @@
 VAR a AS INT
 VAR b AS BOOL
 START
-INPUT: a,b
+INPUT: a
+INPUT: b
 OUTPUT: a & "#" & b
 STOP

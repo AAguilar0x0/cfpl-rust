@@ -1,6 +1,7 @@
 VAR n AS INT
 VAR m AS BOOL
 START
-INPUT: n,m
+INPUT: n
+INPUT: m
 OUTPUT: n & "#" & m
 STOP

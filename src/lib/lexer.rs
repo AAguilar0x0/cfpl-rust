@@ -8,6 +8,9 @@ thread_local!(static FIRST_IN_LINE: Cell<bool> = Cell::new(true));
 pub fn lexical_analysis(
     cfpl_source_code: &source_code::SourceCode,
 ) -> Result<Vec<token::Token>, String> {
+    LINE.with(|data| data.set(0));
+    COLUMN.with(|data| data.set(0));
+    FIRST_IN_LINE.with(|data| data.set(true));
     let mut tokens: Vec<token::Token> = Vec::new();
     let source_code = &cfpl_source_code.vec;
     let mut i: usize = 0;
