@@ -1,6 +1,6 @@
 use std::{env, path::Path};
 
-const HELP_MESSAGE: &str = "Usage: cfpl <type> <type parameter>
+static HELP_MESSAGE: &str = "Usage: cfpl <type> <type parameter>
                                     \n\ttype:
                                     \n\t   --file or -f
                                     \n\t   type parameter:
