@@ -88,34 +88,3 @@ pub fn file(file_path: &str) -> bool {
         },
     });
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use std::fs;
-
-    fn integration_no_input(path: &str, should_true: bool) {
-        let paths = fs::read_dir(path);
-        assert!(paths.is_ok());
-        let paths = paths.unwrap();
-        for path in paths {
-            assert!(path.is_ok());
-            let path = path.unwrap();
-            let path = path.path().to_str().unwrap().to_owned();
-            println!("Test file full path: {}", &path);
-            let result = file(&path);
-            assert!(if should_true { result } else { !result });
-            println!();
-        }
-    }
-
-    #[test]
-    fn integration_no_input_no_error() {
-        integration_no_input("./test_source_codes/no_input/no_error/", true);
-    }
-
-    #[test]
-    fn integration_no_input_with_error() {
-        integration_no_input("./test_source_codes/no_input/with_error/", false);
-    }
-}
